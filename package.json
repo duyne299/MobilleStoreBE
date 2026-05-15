@@ -12,6 +12,7 @@
     "@emotion/styled": "^11.14.1",
     "@maptiler/sdk": "^3.8.0",
     "@mui/icons-material": "^7.3.5",
+    "@radix-ui/react-slot": "^1.2.4",
     "@tinymce/tinymce-react": "6.3.0",
     "axios": "^1.12.2",
     "framer-motion": "^12.23.24",

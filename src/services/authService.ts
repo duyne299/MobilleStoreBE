@@ -8,18 +8,18 @@ export const authService = {
     password: string;
     confirmPassword: string;
   }) {
-    return axiosClient.post("/auth/register", data);
+    return axiosClient.post("/api/auth/signup", data);
   },
 
   login(data: { email: string; password: string }) {
-    return axiosClient.post("/auth/login", data);
+    return axiosClient.post("/api/auth/login", data);
   },
 
   logout() {
-    return axiosClient.post("/auth/logout");
+    return axiosClient.post("/api/auth/logout");
   },
 
   getCurrentUser() {
-    return axiosClient.get("/auth/profile");
+    return axiosClient.get("/api/auth/profile");
   },
 };

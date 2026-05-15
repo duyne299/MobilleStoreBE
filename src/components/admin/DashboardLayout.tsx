@@ -1,11 +1,11 @@
-"use client";
+ "use client";
 
 import * as React from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 
 interface DashboardLayoutProps {
-  children: React.ReactNode;
+  children: React.ReactNode;  
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {

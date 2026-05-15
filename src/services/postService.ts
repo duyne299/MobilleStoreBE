@@ -26,7 +26,7 @@ export const postService = {
     limit?: number;
     search?: string;
   }): Promise<PostListResponse> {
-    const res = await axiosClient.get<PostListResponse>("/posts", {
+    const res = await axiosClient.get<PostListResponse>("/api/posts", {
       params: params || {},
     });
     return res.data;
@@ -34,7 +34,7 @@ export const postService = {
 
   // Lấy chi tiết bài viết theo slug
   async getBySlug(slug: string): Promise<Post> {
-    const res = await axiosClient.get<Post>(`/posts/${slug}`);
+    const res = await axiosClient.get<Post>(`/api/posts/${slug}`);
     return res.data;
   },
 
@@ -58,7 +58,7 @@ export const postService = {
       formData.append("thumbnail", file);
     }
 
-    const res = await axiosClient.post<Post>("/posts", formData, {
+    const res = await axiosClient.post<Post>("/api/posts", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data;
@@ -87,7 +87,7 @@ export const postService = {
       formData.append("thumbnail", file);
     }
 
-    const res = await axiosClient.put<Post>(`/posts/${slug}`, formData, {
+    const res = await axiosClient.put<Post>(`/api/posts/${slug}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
 

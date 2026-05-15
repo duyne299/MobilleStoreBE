@@ -12,7 +12,7 @@ export default function Footer() {
     {
       icon: <RefreshCw className="w-8 h-8 text-red-600" />,
       title: "Đổi trả dễ dàng",
-      description: "Theo chính sách đổi trả tại TeddyTech Shop"
+      description: "Theo chính sách đổi trả tại Duyne Shop"
     },
     {
       icon: <Truck className="w-8 h-8 text-red-600" />,
@@ -67,7 +67,7 @@ export default function Footer() {
           <div className="mb-8">
             <h2 className="text-lg sm:text-xl font-bold mb-4">Hệ thống trên toàn quốc</h2>
             <p className="text-sm text-gray-400 mb-4">
-              Bao gồm Cửa hàng Teddy Shop
+              Bao gồm Cửa hàng Duyne Shop
             </p>
           </div>
 
@@ -75,7 +75,7 @@ export default function Footer() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             {/* Column 1: Connect */}
             <div>
-              <h3 className="text-base font-bold mb-4 uppercase">Kết nối với TeddyTech Shop</h3>
+              <h3 className="text-base font-bold mb-4 uppercase">Kết nối với Duyne Shop</h3>
               <div className="flex gap-3 mb-6">
                 <a href="#" className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
                   <Facebook className="w-5 h-5" />

@@ -30,7 +30,7 @@ export default function BlackFridayDeals() {
             id: 4,
             title: 'Loa Bluetooth',
             subtitle: 'Âm thanh đỉnh cao giảm tới 35%',
-            cta: 'Săm ngay',
+            cta: 'Săn ngay',
             image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=300&fit=crop',
             size: 'small'
         },

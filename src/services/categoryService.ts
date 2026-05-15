@@ -20,19 +20,19 @@ interface FindAllParams {
 export const categoryService = {
   // Lấy danh sách category với phân trang/search
   getAll: async (params: FindAllParams) => {
-    const res = await axiosClient.get("/categories", { params });
+    const res = await axiosClient.get("/api/categories", { params });
     return res.data; // { data: Category[], total: number }
   },
 
   // Lấy chi tiết category theo slug
   getOne: async (idOrSlug: string | number) => {
-    const res = await axiosClient.get(`/categories/${idOrSlug}`);
+    const res = await axiosClient.get(`/api/categories/${idOrSlug}`);
     return res.data;
   },
 
   // Kiểm tra tên category đã tồn tại chưa
   checkName: async (name: string) => {
-    const res = await axiosClient.get("/categories/check-name", {
+    const res = await axiosClient.get("/api/categories/check-name", {
       params: { name },
     });
     return res.data.exists;
@@ -40,19 +40,19 @@ export const categoryService = {
 
   // Thêm category mới
   create: async (data: Partial<Category>) => {
-    const res = await axiosClient.post("/categories", data);
+    const res = await axiosClient.post("/api/categories", data);
     return res.data;
   },
 
   // Cập nhật category
   update: async (slug: string, data: Partial<Category>) => {
-    const res = await axiosClient.put(`/categories/${slug}`, data);
+    const res = await axiosClient.put(`/api/categories/${slug}`, data);
     return res.data;
   },
 
   // Cập nhật trạng thái active/inactive
   updateStatus: async (slug: string, isActive: boolean) => {
-    const res = await axiosClient.patch(`/categories/${slug}/status`, {
+    const res = await axiosClient.patch(`/api/categories/${slug}/status`, {
       isActive,
     });
     return res.data;
@@ -60,7 +60,7 @@ export const categoryService = {
 
   // Xóa category
   remove: async (id: number) => {
-    const res = await axiosClient.delete(`/categories/${id}`);
+    const res = await axiosClient.delete(`/api/categories/${id}`);
     return res.data;
   },
 
