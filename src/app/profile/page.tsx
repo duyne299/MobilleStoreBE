@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Bell, FileText, Heart, MapPin, Shield, LogOut, Camera } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUsers } from '@/hooks/useUser';
-import { User } from '@/services/userService';
+import { User, userService } from '@/services/userService';
 import Toast from '@/components/ui/Toast';
 import MyOrders from '@/components/profile/MyOrder';
 import Header from '@/components/ui/Header';
@@ -38,7 +38,7 @@ export default function ProfilePage() {
     }
   }, [toast]);
 
-  // Load user from localStorage
+  // Load user from localStorage & fetch full profile if userId is missing
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -52,6 +52,25 @@ export default function ProfilePage() {
       });
       if (userData.avatar) {
         setAvatarPreview(userData.avatar);
+      }
+
+      // Self-healing: if userId is missing, fetch current user info from server
+      if (!userData.userId) {
+        userService.getCurrentUser().then((fullUser) => {
+          if (fullUser && fullUser.userId) {
+            localStorage.setItem('user', JSON.stringify(fullUser));
+            setUser(fullUser);
+            setFormData({
+              fullName: fullUser.fullName || '',
+              phone: fullUser.phone || '',
+              email: fullUser.email || '',
+              address: fullUser.address || ''
+            });
+            if (fullUser.avatar) {
+              setAvatarPreview(fullUser.avatar);
+            }
+          }
+        }).catch(err => console.error("Error fetching full user profile:", err));
       }
     }
   }, []);
