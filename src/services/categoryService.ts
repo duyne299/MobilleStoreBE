@@ -7,6 +7,7 @@ export interface Category {
   description?: string;
   parentId?: number | null;
   isActive: boolean;
+  categoryImage?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,14 +40,38 @@ export const categoryService = {
   },
 
   // Thêm category mới
-  create: async (data: Partial<Category>) => {
-    const res = await axiosClient.post("/api/categories", data);
+  create: async (data: Partial<Category>, image?: File) => {
+    const formData = new FormData();
+    Object.keys(data).forEach((key) => {
+      const value = (data as any)[key];
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    if (image) {
+      formData.append("image", image);
+    }
+
+    const res = await axiosClient.post("/api/categories", formData);
     return res.data;
   },
 
   // Cập nhật category
-  update: async (slug: string, data: Partial<Category>) => {
-    const res = await axiosClient.put(`/api/categories/${slug}`, data);
+  update: async (slug: string, data: Partial<Category>, image?: File) => {
+    const formData = new FormData();
+    Object.keys(data).forEach((key) => {
+      const value = (data as any)[key];
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    if (image) {
+      formData.append("image", image);
+    }
+
+    const res = await axiosClient.put(`/api/categories/${slug}`, formData);
     return res.data;
   },
 

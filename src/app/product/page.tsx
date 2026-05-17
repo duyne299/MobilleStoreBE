@@ -1,129 +1,139 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SlidersHorizontal, ChevronDown, X } from 'lucide-react';
-import ProductCard from '@/components/products/ProductCard';
-import { useProducts } from '@/hooks/useProduct';
-import { useWarehouses } from '@/hooks/useWarehouse';
-import FilterSidebar from '@/components/ui/FilterSidebar';
-import Header from '@/components/ui/Header';
-import Footer from '@/components/ui/Footer';
-import { AutoHideHeader } from '@/components/ui/AutoHideHeader';
-import ProductSlider from '@/components/banners/ProductSlide';
-import { useSearchParams } from 'next/navigation';
-import { ScrollToTopButton } from '@/components/ui/ScrollToTopButton';
+"use client";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { SlidersHorizontal, ChevronDown, X } from "lucide-react";
+import ProductCard from "@/components/products/ProductCard";
+import { useProducts } from "@/hooks/useProduct";
+import { productService } from "@/services/productService";
+import { useProductVariants } from "@/hooks/useVariant";
+import FilterSidebar from "@/components/ui/FilterSidebar";
+import Header from "@/components/ui/Header";
+import Footer from "@/components/ui/Footer";
+import { brandService } from "@/services/brandService";
+import { AutoHideHeader } from "@/components/ui/AutoHideHeader";
+import ProductSlider from "@/components/banners/ProductSlide";
+import { useSearchParams } from "next/navigation";
+import { ScrollToTopButton } from "@/components/ui/ScrollToTopButton";
 
 export default function ProductPage() {
   const searchParams = useSearchParams();
-  const categoryFromUrl = searchParams.get('category');
-  const searchFromUrl = searchParams.get('search'); // Lấy search query từ URL
-  
-  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'Điện thoại');
+  const categoryFromUrl = searchParams.get("category");
+  const searchFromUrl = searchParams.get("search"); // Lấy search query từ URL
+
+  const [selectedCategory, setSelectedCategory] = useState(
+    categoryFromUrl || "Điện thoại",
+  );
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedRam, setSelectedRam] = useState<string[]>([]);
-  const [selectedRom, setSelectedRom] = useState<string[]>([]);
-  const [selectedBattery, setSelectedBattery] = useState('all');
   const [priceRange, setPriceRange] = useState([0, 64000000]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(searchFromUrl || ''); // State cho search query
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl || ""); // State cho search query
 
   const itemsPerPage = 16;
 
-  const { getByCategoryId } = useProducts();
-  const { getByProduct } = useWarehouses();
+  const { fetchProducts } = useProducts(100);
+  const {} = useProductVariants();
 
-  const brands = ['Apple', 'Samsung', 'Xiaomi', 'OPPO', 'Vivo', 'Realme', 'Nokia', 'Tecno'];
+  const [brands, setBrands] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const res = await brandService.findAll({ page: 1, limit: 100 });
+        if (res?.data) {
+          setBrands(res.data.map((b: any) => b.brandName));
+        }
+      } catch (err) {
+        console.error("Lỗi tải thương hiệu:", err);
+      }
+    };
+    fetchBrands();
+  }, []);
 
   // Categories mapping
   const categoryMap: Record<string, number | number[]> = {
-    'Điện thoại': [3, 4, 5, 6, 7, 8],
-    'Tablet': [9, 10, 11, 12, 13, 14, 15],
-    'Phụ kiện': [17, 18, 19, 20, 21]
+    "Điện thoại": [3, 4, 5, 6, 7, 8],
+    Tablet: [9, 10, 11, 12, 13, 14, 15],
+    "Phụ kiện": [17, 18, 19, 20, 21],
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+    return new Intl.NumberFormat("vi-VN").format(price) + "đ";
   };
 
   // Update search query when URL changes
   useEffect(() => {
-    const newSearchQuery = searchParams.get('search');
+    const newSearchQuery = searchParams.get("search");
     if (newSearchQuery !== searchQuery) {
-      setSearchQuery(newSearchQuery || '');
+      setSearchQuery(newSearchQuery || "");
       setCurrentPage(1);
     }
   }, [searchParams]);
 
-  // Load products từ API
+  // Update selected category when URL changes
+  useEffect(() => {
+    const newCategory = searchParams.get("category");
+    setSelectedCategory(newCategory || "Điện thoại");
+    setCurrentPage(1);
+  }, [searchParams]);
+
+  // Load sản phẩm từ API
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
       try {
-        const allProducts: any[] = [];
-        const categoryIds = Array.isArray(categoryMap[selectedCategory])
-          ? categoryMap[selectedCategory]
-          : [categoryMap[selectedCategory]];
+        // Fetch all products initially to handle filtering on client-side
+        const res = await productService.getAll({ page: 1, limit: 100 });
+        const allProducts = res.data || [];
 
-        for (const categoryId of categoryIds) {
-          try {
-            const categoryProducts = await getByCategoryId(categoryId);
-            if (Array.isArray(categoryProducts)) {
-              allProducts.push(...categoryProducts);
-            }
-          } catch (err) {
-            console.error(`Lỗi tải sản phẩm cho categoryId=${categoryId}:`, err);
+        const productsWithDetails = allProducts.map((product: any) => {
+          const variants = product.variants || [];
+          const availableVariants = variants.filter(
+            (v: any) => v.quantity > 0 && (v.isActive ?? v.active),
+          );
+
+          let lowestPrice = 0;
+          if (availableVariants.length > 0) {
+            lowestPrice = Math.min(
+              ...availableVariants.map((v: any) => v.baseSalePrice),
+            );
+          } else if (variants.length > 0) {
+            lowestPrice = Math.min(
+              ...variants.map((v: any) => v.baseSalePrice),
+            );
           }
-        }
 
-        const productsWithDetails = await Promise.all(
-          allProducts.map(async (product) => {
-            try {
-              const warehouseData = await getByProduct(product.proId);
-              const availableWarehouses = warehouseData.filter((w: any) => w.quantity > 0);
+          const colors = variants
+            .filter((v: any) => v.isActive ?? v.active)
+            .map((v: any) => ({
+              name: v.color || "Mặc định",
+              code: "#CCCCCC",
+              variantId: v.optionId,
+            }))
+            .filter(
+              (color: any, index: number, self: any[]) =>
+                index === self.findIndex((c) => c.name === color.name),
+            );
 
-              let lowestPrice = product.price;
-              if (availableWarehouses.length > 0) {
-                lowestPrice = Math.min(...availableWarehouses.map((w: any) => w.baseSalePrice));
-              } else if (warehouseData.length > 0) {
-                lowestPrice = warehouseData[0].baseSalePrice;
-              }
+          return {
+            ...product,
+            baseSalePrice: lowestPrice,
+            colors: colors,
+            hasStock: availableVariants.length > 0,
+          };
+        });
 
-              const colors = warehouseData
-                .map((w: any) => ({
-                  name: w.variant?.color?.colorName || 'Không rõ',
-                  code: w.variant?.color?.colorCode || '#CCCCCC',
-                  variantId: w.variant?.varId
-                }))
-                .filter((color: any, index: number, self: any[]) =>
-                  index === self.findIndex((c) => c.name === color.name)
-                );
+        // Lọc theo danh mục đã chọn
+        const filteredByCategory = productsWithDetails.filter((p: any) => {
+          if (!selectedCategory) return true;
+          return p.category?.categoryName === selectedCategory;
+        });
 
-              return {
-                ...product,
-                baseSalePrice: lowestPrice,
-                warehouseData: warehouseData,
-                colors: colors,
-                hasStock: availableWarehouses.length > 0
-              };
-            } catch (error) {
-              console.error(`Lỗi khi tải warehouse cho sản phẩm ${product.proId}:`, error);
-              return {
-                ...product,
-                baseSalePrice: product.price,
-                warehouseData: [],
-                colors: [],
-                hasStock: false
-              };
-            }
-          })
-        );
-
-        setProducts(productsWithDetails);
+        setProducts(filteredByCategory);
       } catch (error) {
-        console.error('Lỗi khi tải sản phẩm:', error);
+        console.error("Lỗi khi tải sản phẩm:", error);
       } finally {
         setLoading(false);
       }
@@ -131,12 +141,12 @@ export default function ProductPage() {
 
     loadProducts();
     setCurrentPage(1);
-  }, [selectedCategory, getByCategoryId, getByProduct]);
+  }, [selectedCategory]);
 
   // Reset về trang 1 khi filter thay đổi
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedBrands, selectedRam, selectedRom, selectedBattery, priceRange, searchQuery]);
+  }, [selectedBrands, priceRange, searchQuery]);
 
   // Tính giá khuyến mãi
   const calculateDiscount = (price: number, index: number) => {
@@ -145,30 +155,31 @@ export default function ProductPage() {
     return {
       newPrice: Math.round(price * (1 - discountPercent / 100)),
       discount: `-${discountPercent}%`,
-      savedAmount: Math.round((price * discountPercent) / 100)
+      savedAmount: Math.round((price * discountPercent) / 100),
     };
   };
 
   // Filter products - THÊM SEARCH FILTER
   const filteredProducts = products.filter((product) => {
     // Filter by search query
-    if (searchQuery && searchQuery.trim() !== '') {
+    if (searchQuery && searchQuery.trim() !== "") {
       const searchLower = searchQuery.toLowerCase().trim();
       const productName = product.proName.toLowerCase();
-      const productDescription = product.description?.toLowerCase() || '';
-      
+      const productDescription = product.description?.toLowerCase() || "";
+
       // Kiểm tra nếu search query có trong tên hoặc mô tả sản phẩm
-      if (!productName.includes(searchLower) && !productDescription.includes(searchLower)) {
+      if (
+        !productName.includes(searchLower) &&
+        !productDescription.includes(searchLower)
+      ) {
         return false;
       }
     }
 
     // Filter by brand
     if (selectedBrands.length > 0) {
-      const productBrand = brands.find((b) =>
-        product.proName.toLowerCase().includes(b.toLowerCase())
-      );
-      if (!productBrand || !selectedBrands.includes(productBrand)) {
+      const productBrandName = product.brand?.brandName;
+      if (!productBrandName || !selectedBrands.includes(productBrandName)) {
         return false;
       }
     }
@@ -179,59 +190,42 @@ export default function ProductPage() {
       return false;
     }
 
-    // Filter by RAM
-    if (selectedRam.length > 0) {
-      const productRam = product.specification?.ram;
-      if (!productRam) return false;
-      const ramMatch = selectedRam.some((ram) => {
-        const ramValue = parseInt(ram);
-        const productRamValue = parseInt(productRam);
-        return productRamValue === ramValue;
-      });
-      if (!ramMatch) return false;
-    }
-
-    // Filter by ROM
-    if (selectedRom.length > 0) {
-      const productRom = product.specification?.rom;
-      if (!productRom) return false;
-      const romMatch = selectedRom.some((rom) => {
-        const romValue = parseInt(rom);
-        const productRomValue = parseInt(productRom);
-        return productRomValue === romValue;
-      });
-      if (!romMatch) return false;
-    }
-
-    // Filter by battery
-    if (selectedBattery !== 'all') {
-      const battery = product.specification?.battery;
-      if (!battery) return false;
-      const batteryValue = parseInt(String(battery).replace(/[^0-9]/g, ''));
-      const [min, max] = selectedBattery.split('-').map(Number);
-      if (batteryValue < min || batteryValue > max) {
-        return false;
-      }
-    }
-
     return true;
   });
 
   // Tính toán số sản phẩm hiển thị (Load More logic)
-  const displayedProducts = filteredProducts.slice(0, currentPage * itemsPerPage);
+  const displayedProducts = filteredProducts.slice(
+    0,
+    currentPage * itemsPerPage,
+  );
   const hasMore = displayedProducts.length < filteredProducts.length;
   const remainingCount = filteredProducts.length - displayedProducts.length;
 
   // Transform product for ProductCard
   const transformProduct = (product: any, index: number) => {
-    const basePrice = product.baseSalePrice || product.price;
-    const { newPrice, discount, savedAmount } = calculateDiscount(basePrice, index);
+    const basePrice = product.baseSalePrice || 0;
+    const { newPrice, discount, savedAmount } = calculateDiscount(
+      basePrice,
+      index,
+    );
+
+    // Tìm ảnh cover
+    const coverImg =
+      product.images?.find((img: any) => img.isCover) ||
+      product.images?.[0] ||
+      product.mainImage;
+    const coverUrl =
+      typeof coverImg === "string" ? coverImg : coverImg?.imageUrl;
 
     return {
       id: product.proId,
       name: product.proName,
       slug: product.slug,
-      image: `${process.env.NEXT_PUBLIC_API_URL}${product.images.find((img: any) => img.isCover)?.imageUrl}`,
+      image: coverUrl
+        ? coverUrl.startsWith("http")
+          ? coverUrl
+          : `${process.env.NEXT_PUBLIC_API_URL}${coverUrl}`
+        : "https://placehold.co/400x400?text=No+Image",
       originalPrice: formatPrice(basePrice),
       price: formatPrice(newPrice),
       discount: discount,
@@ -239,41 +233,28 @@ export default function ProductPage() {
       installment: true,
       rating: product.rating || 4.5,
       ratingCount: Math.floor(Math.random() * 1000) + 100,
-      specs:
-        ['cpu', 'cameraFront', 'battery']
-          .map((key) => {
-            let value = product.specification?.[key];
-            if (!value || String(value).trim() === '') return null;
-            if (key === 'battery') {
-              value = String(value).split(',')[0].trim();
-            }
-            return { text: value };
-          })
-          .filter(Boolean) || [],
-      colors: product.colors || []
+      specs: [],
+      colors: product.colors || [],
     };
   };
 
   // Function để clear search
   const clearSearch = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     // Cập nhật URL để xóa search parameter
-    window.history.pushState({}, '', '/products');
+    window.history.pushState({}, "", "/products");
   };
 
   // Function để clear tất cả filters
   const clearAllFilters = () => {
     setSelectedBrands([]);
-    setSelectedRam([]);
-    setSelectedRom([]);
-    setSelectedBattery('all');
     setPriceRange([0, 64000000]);
     clearSearch();
   };
 
   return (
     <>
-      <div className='pb-10'>
+      <div className="pb-10">
         <AutoHideHeader>
           <Header />
         </AutoHideHeader>
@@ -288,7 +269,7 @@ export default function ProductPage() {
             </div>
 
             <h1 className="mt-3 text-2xl sm:text-3xl font-bold text-black">
-              {searchQuery ? `Kết quả tìm kiếm: "${searchQuery}"` : 'Sản phẩm'}
+              {searchQuery ? `Kết quả tìm kiếm: "${searchQuery}"` : "Sản phẩm"}
             </h1>
           </div>
         </div>
@@ -325,12 +306,6 @@ export default function ProductPage() {
                     setSelectedCategory={setSelectedCategory}
                     selectedBrands={selectedBrands}
                     setSelectedBrands={setSelectedBrands}
-                    selectedRam={selectedRam}
-                    setSelectedRam={setSelectedRam}
-                    selectedRom={selectedRom}
-                    setSelectedRom={setSelectedRom}
-                    selectedBattery={selectedBattery}
-                    setSelectedBattery={setSelectedBattery}
                     priceRange={priceRange}
                     setPriceRange={setPriceRange}
                   />
@@ -350,16 +325,18 @@ export default function ProductPage() {
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
                   />
                   <motion.div
-                    initial={{ x: '-100%' }}
+                    initial={{ x: "-100%" }}
                     animate={{ x: 0 }}
-                    exit={{ x: '-100%' }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    exit={{ x: "-100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
                     className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 overflow-y-auto lg:hidden"
                   >
                     <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <SlidersHorizontal className="w-5 h-5" />
-                        <h2 className="text-lg font-semibold">Bộ lọc tìm kiếm</h2>
+                        <h2 className="text-lg font-semibold">
+                          Bộ lọc tìm kiếm
+                        </h2>
                       </div>
                       <button
                         onClick={() => setShowMobileFilter(false)}
@@ -373,12 +350,6 @@ export default function ProductPage() {
                       setSelectedCategory={setSelectedCategory}
                       selectedBrands={selectedBrands}
                       setSelectedBrands={setSelectedBrands}
-                      selectedRam={selectedRam}
-                      setSelectedRam={setSelectedRam}
-                      selectedRom={selectedRom}
-                      setSelectedRom={setSelectedRom}
-                      selectedBattery={selectedBattery}
-                      setSelectedBattery={setSelectedBattery}
                       priceRange={priceRange}
                       setPriceRange={setPriceRange}
                     />
@@ -405,16 +376,17 @@ export default function ProductPage() {
                 <>
                   {/* Active Filters Display */}
                   {(searchQuery ||
-                    selectedBrands.length > 0 || 
-                    selectedRam.length > 0 || 
-                    selectedRom.length > 0 || 
-                    selectedBattery !== 'all' || 
-                    priceRange[0] !== 0 || 
+                    selectedBrands.length > 0 ||
+                    priceRange[0] !== 0 ||
                     priceRange[1] !== 64000000) && (
                     <div className="mb-4 bg-white rounded-lg p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-gray-700">
-                          Tìm thấy <span className="text-red-600">{filteredProducts.length}</span> kết quả
+                          Tìm thấy{" "}
+                          <span className="text-red-600">
+                            {filteredProducts.length}
+                          </span>{" "}
+                          kết quả
                         </span>
                         <button
                           onClick={clearAllFilters}
@@ -445,63 +417,30 @@ export default function ProductPage() {
                           >
                             {brand}
                             <button
-                              onClick={() => setSelectedBrands(selectedBrands.filter((b) => b !== brand))}
+                              onClick={() =>
+                                setSelectedBrands(
+                                  selectedBrands.filter((b) => b !== brand),
+                                )
+                              }
                               className="hover:bg-gray-200 rounded-full p-0.5"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </span>
                         ))}
-                        
-                        {/* Selected RAM */}
-                        {selectedRam.map((ram) => (
-                          <span
-                            key={ram}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-sm"
-                          >
-                            {ram} GB
-                            <button
-                              onClick={() => setSelectedRam(selectedRam.filter((r) => r !== ram))}
-                              className="hover:bg-gray-200 rounded-full p-0.5"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </span>
-                        ))}
-                        
-                        {/* Selected ROM */}
-                        {selectedRom.map((rom) => (
-                          <span
-                            key={rom}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-sm"
-                          >
-                            {rom} GB
-                            <button
-                              onClick={() => setSelectedRom(selectedRom.filter((r) => r !== rom))}
-                              className="hover:bg-gray-200 rounded-full p-0.5"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </span>
-                        ))}
-                        
-                        {/* Selected Battery */}
-                        {selectedBattery !== 'all' && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-sm">
-                            Từ {selectedBattery.split('-')[0]} - {selectedBattery.split('-')[1]} mAh
-                            <button
-                              onClick={() => setSelectedBattery('all')}
-                              className="hover:bg-gray-200 rounded-full p-0.5"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </span>
-                        )}
-                        
+
+                        {/* Selected RAM - Removed */}
+
+                        {/* Selected ROM - Removed */}
+
+                        {/* Selected Battery - Removed */}
+
                         {/* Price Range */}
-                        {(priceRange[0] !== 0 || priceRange[1] !== 64000000) && (
+                        {(priceRange[0] !== 0 ||
+                          priceRange[1] !== 64000000) && (
                           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-sm">
-                            {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
+                            {formatPrice(priceRange[0])} -{" "}
+                            {formatPrice(priceRange[1])}
                             <button
                               onClick={() => setPriceRange([0, 64000000])}
                               className="hover:bg-gray-200 rounded-full p-0.5"
@@ -520,9 +459,14 @@ export default function ProductPage() {
                         key={product.proId}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: (index % itemsPerPage) * 0.05 }}
+                        transition={{
+                          duration: 0.4,
+                          delay: (index % itemsPerPage) * 0.05,
+                        }}
                       >
-                        <ProductCard product={transformProduct(product, index)} />
+                        <ProductCard
+                          product={transformProduct(product, index)}
+                        />
                       </motion.div>
                     ))}
                   </div>
@@ -555,10 +499,9 @@ export default function ProductPage() {
                       </h3>
 
                       <p className="text-gray-500 text-center max-w-md mb-6">
-                        {searchQuery 
+                        {searchQuery
                           ? `Không có sản phẩm nào phù hợp với từ khóa "${searchQuery}". Hãy thử tìm kiếm với từ khóa khác.`
-                          : 'Không có sản phẩm nào phù hợp với bộ lọc của bạn. Hãy thử điều chỉnh tiêu chí tìm kiếm.'
-                        }
+                          : "Không có sản phẩm nào phù hợp với bộ lọc của bạn. Hãy thử điều chỉnh tiêu chí tìm kiếm."}
                       </p>
 
                       <button
@@ -581,18 +524,21 @@ export default function ProductPage() {
                             className="px-6 py-2 rounded-full bg-white hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
                           >
                             <span>
-                              Xem thêm {Math.min(itemsPerPage, remainingCount)} kết quả
+                              Xem thêm {Math.min(itemsPerPage, remainingCount)}{" "}
+                              kết quả
                             </span>
                             <ChevronDown className="w-5 h-5" />
                           </button>
                           <div className="text-xs lg:text-sm text-gray-600">
-                            Hiển thị {displayedProducts.length} trong số {filteredProducts.length} sản phẩm
+                            Hiển thị {displayedProducts.length} trong số{" "}
+                            {filteredProducts.length} sản phẩm
                           </div>
                         </div>
                       ) : (
                         <div className="text-center">
                           <div className="text-sm text-gray-600 mb-3">
-                            Đã hiển thị tất cả {filteredProducts.length} sản phẩm
+                            Đã hiển thị tất cả {filteredProducts.length} sản
+                            phẩm
                           </div>
                         </div>
                       )}
@@ -605,7 +551,7 @@ export default function ProductPage() {
         </div>
       </div>
       <Footer />
-      <ScrollToTopButton/>
+      <ScrollToTopButton />
     </>
   );
 }

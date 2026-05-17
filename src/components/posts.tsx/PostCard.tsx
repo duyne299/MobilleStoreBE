@@ -30,7 +30,10 @@ export default function PostCard({ post }: { post: any }) {
       {/* Thumbnail */}
       <div className="relative w-full h-48 overflow-hidden bg-gray-100">
         <motion.img
-          src={`${process.env.NEXT_PUBLIC_API_URL}${post.thumbnail}`}
+          src={post.thumbnail?.startsWith('http') 
+              ? post.thumbnail 
+              : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${post.thumbnail}`
+          }
           alt={post.title}
           className="w-full h-full object-cover"
           whileHover={{ scale: 1.05 }}
@@ -67,10 +70,12 @@ export default function PostCard({ post }: { post: any }) {
             </div>
           </div>
 
-          {post.author.authorName && (
+          {(post.author?.authorName || (post.author as any)?.fullName) && (
             <div className="flex items-center gap-1 text-red-600">
               <User className="w-3.5 h-3.5" />
-              <span className="font-medium">{post.author.authorName}</span>
+              <span className="font-medium">
+                {post.author?.authorName || (post.author as any)?.fullName}
+              </span>
             </div>
           )}
         </div>

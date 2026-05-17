@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '@/components/products/ProductCard';
 import { useProducts } from '@/hooks/useProduct';
-import { useWarehouses } from '@/hooks/useWarehouse';
 
 interface SuggestedProductsProps {
   categoryId: number;
@@ -24,7 +23,6 @@ export default function SuggestedProducts({
   const [products, setProducts] = useState<any[]>([]);
   
   const { getByCategoryId, loading } = useProducts();
-  const { getByProduct } = useWarehouses();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -61,46 +59,26 @@ export default function SuggestedProducts({
         // Lấy tối đa 8 sản phẩm
         const selectedProducts = shuffled.slice(0, 8);
 
-        // Lấy thông tin warehouse cho từng sản phẩm
-        const productsWithWarehouse = await Promise.all(
-          selectedProducts.map(async (product) => {
-            try {
-              const warehouseData = await getByProduct(product.proId);
+        // Tính toán giá và tồn kho từ variants
+        const productsWithDetails = selectedProducts.map((product: any) => {
+          const variants = product.variants || [];
+          const availableVariants = variants.filter((v: any) => v.quantity > 0 && (v.isActive ?? v.active));
 
-              // Lọc warehouse có tồn kho > 0 và lấy giá thấp nhất
-              const availableWarehouses = warehouseData.filter(
-                (w: any) => w.quantity > 0
-              );
+          let lowestPrice = product.price || 0;
+          if (availableVariants.length > 0) {
+            lowestPrice = Math.min(...availableVariants.map((v: any) => v.baseSalePrice));
+          } else if (variants.length > 0) {
+            lowestPrice = Math.min(...variants.map((v: any) => v.baseSalePrice));
+          }
 
-              if (availableWarehouses.length > 0) {
-                const lowestPrice = Math.min(
-                  ...availableWarehouses.map((w: any) => w.baseSalePrice)
-                );
+          return {
+            ...product,
+            baseSalePrice: lowestPrice,
+            hasStock: availableVariants.length > 0
+          };
+        });
 
-                return {
-                  ...product,
-                  baseSalePrice: lowestPrice,
-                  warehouseData: availableWarehouses
-                };
-              }
-
-              return {
-                ...product,
-                baseSalePrice: warehouseData[0]?.baseSalePrice || product.price,
-                warehouseData: warehouseData
-              };
-            } catch (error) {
-              console.error(`Lỗi khi tải warehouse cho sản phẩm ${product.proId}:`, error);
-              return {
-                ...product,
-                baseSalePrice: product.price,
-                warehouseData: []
-              };
-            }
-          })
-        );
-
-        setProducts(productsWithWarehouse);
+        setProducts(productsWithDetails);
       } catch (error) {
         console.error("Lỗi khi tải sản phẩm:", error);
         setProducts([]);
@@ -110,7 +88,7 @@ export default function SuggestedProducts({
     if (categoryId) {
       loadProducts();
     }
-  }, [categoryId, excludeProductId, getByCategoryId, getByProduct]);
+  }, [categoryId, excludeProductId, getByCategoryId]);
 
   // Format giá VND
   const formatPrice = (price: number) => {
@@ -225,14 +203,21 @@ export default function SuggestedProducts({
               }}
             >
               {products.map((product, index) => {
-                const basePrice = product.baseSalePrice || product.price;
+                const basePrice = product.baseSalePrice ?? product.price ?? 0;
                 const { newPrice, discount, savedAmount } = calculateDiscount(basePrice, index);
-                const hasStock = product.warehouseData && product.warehouseData.some((w: any) => w.quantity > 0);
+                const hasStock = product.hasStock;
+
+                const rawCover = product.images?.find((img: any) => img.isCover) || product.images?.[0] || product.mainImage;
+                const coverImage = typeof rawCover === 'string' ? rawCover : rawCover?.imageUrl;
 
                 const transformedProduct = {
                   id: product.proId,
                   name: product.proName,
-                  image: `${process.env.NEXT_PUBLIC_API_URL}${product.images.find((img: any) => img.isCover)?.imageUrl}`,
+                  image: coverImage
+                    ? (coverImage || '').startsWith('http')
+                      ? coverImage
+                      : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${coverImage}`
+                    : "https://placehold.co/400x400?text=No+Image",
                   originalPrice: formatPrice(newPrice),
                   price: formatPrice(basePrice),
                   slug: product.slug,

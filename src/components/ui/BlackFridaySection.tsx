@@ -55,7 +55,7 @@ export default function BlackFridayDeals() {
 
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-10 py-8">
+        <div className="px-4 sm:px-12 md:px-16 lg:px-40 py-4">
             {/* Header */}
             <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">
                 Bùng nổ khuyến mãi Black Friday

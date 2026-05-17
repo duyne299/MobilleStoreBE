@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Star, Package, TrendingUp, X, ShoppingCart, CheckCircle } from 'lucide-react';
 import { useProducts } from '@/hooks/useProduct';
 import { useProductVariants } from '@/hooks/useVariant';
-import { useWarehouses } from '@/hooks/useWarehouse';
 import { useCart } from '@/hooks/useCart';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/ui/Header';
@@ -34,7 +33,6 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
   const { getProductBySlug } = useProducts();
   const { variants, fetchByProductId } = useProductVariants();
-  const { getByOption } = useWarehouses();
   const { addToCart } = useCart();
 
   const { slug } = React.use(params);
@@ -71,65 +69,44 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   }, [toast]);
 
   useEffect(() => {
-    const loadAllVariantPrices = async () => {
+    const loadAllVariantPrices = () => {
       if (variants.length === 0) return;
 
-      try {
-        const variantsWithPricesData = await Promise.all(
-          variants
-            .filter(v => v.isActive)
-            .map(async (variant) => {
-              try {
-                const warehouseData = await getByOption(variant.optionId);
-                return {
-                  ...variant,
-                  price: warehouseData?.baseSalePrice || 0
-                };
-              } catch (error) {
-                console.error(`Error loading price for variant ${variant.optionId}:`, error);
-                return {
-                  ...variant,
-                  price: 0
-                };
-              }
-            })
+      const variantsWithPricesData = variants
+        .filter(v => v.isActive ?? (v as any).active)
+        .map((variant) => ({
+          ...variant,
+          price: (variant as any).baseSalePrice || 0
+        }));
+
+      setVariantsWithPrices(variantsWithPricesData);
+
+      const variantsWithValidPrice = variantsWithPricesData.filter(v => v.price > 0);
+
+      if (variantsWithValidPrice.length > 0) {
+        const lowestPriceVariant = variantsWithValidPrice.reduce((lowest, current) =>
+          current.price < lowest.price ? current : lowest
         );
 
-        setVariantsWithPrices(variantsWithPricesData);
-
-        const variantsWithValidPrice = variantsWithPricesData.filter(v => v.price > 0);
-
-        if (variantsWithValidPrice.length > 0) {
-          const lowestPriceVariant = variantsWithValidPrice.reduce((lowest, current) =>
-            current.price < lowest.price ? current : lowest
-          );
-
-          if (lowestPriceVariant.rom?.toLowerCase() !== 'standard') {
-            setSelectedStorage(lowestPriceVariant.rom);
-          } else {
-            setSelectedStorage(lowestPriceVariant.rom);
-          }
-          setSelectedColor(lowestPriceVariant.color);
-        } else {
-          const firstVariant = variants.find(v => v.isActive);
-          if (firstVariant) {
-            setSelectedStorage(firstVariant.rom);
-            setSelectedColor(firstVariant.color);
-          }
+        setSelectedStorage(lowestPriceVariant.rom);
+        setSelectedColor(lowestPriceVariant.color);
+      } else {
+        const firstVariant = variants.find(v => v.isActive ?? (v as any).active);
+        if (firstVariant) {
+          setSelectedStorage(firstVariant.rom);
+          setSelectedColor(firstVariant.color);
         }
-      } catch (error) {
-        console.error('Error loading variant prices:', error);
       }
     };
 
     loadAllVariantPrices();
-  }, [variants, getByOption]);
+  }, [variants]);
 
   useEffect(() => {
     if (!selectedStorage || !selectedColor) return;
 
     const selectedOption = variants.find(
-      v => v.rom === selectedStorage && v.color === selectedColor && v.isActive
+      v => v.rom === selectedStorage && v.color === selectedColor && (v.isActive ?? (v as any).active)
     );
 
     if (selectedOption) {
@@ -140,35 +117,26 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   }, [selectedStorage, selectedColor, variants]);
 
   useEffect(() => {
-    const loadWarehouseData = async () => {
-      if (!selectedOptionId) {
-        setCurrentPrice(0);
-        setOriginalPrice(0);
-        setStockQuantity(0);
-        return;
-      }
+    if (!selectedOptionId) {
+      setCurrentPrice(0);
+      setOriginalPrice(0);
+      setStockQuantity(0);
+      return;
+    }
 
-      try {
-        const warehouseData = await getByOption(selectedOptionId);
-
-        if (warehouseData) {
-          const price = warehouseData.baseSalePrice || 0;
-          setCurrentPrice(price);
-          setOriginalPrice(price);
-        } else {
-          setCurrentPrice(0);
-          setOriginalPrice(0);
-        }
-      } catch (error) {
-        console.error('Error loading warehouse data:', error);
-        setCurrentPrice(0);
-        setOriginalPrice(0);
-        setStockQuantity(0);
-      }
-    };
-
-    loadWarehouseData();
-  }, [selectedOptionId, getByOption]);
+    const selectedOption = variants.find(v => v.optionId === selectedOptionId);
+    if (selectedOption) {
+      const price = (selectedOption as any).baseSalePrice || 0;
+      const quantity = (selectedOption as any).quantity || 0;
+      setCurrentPrice(price);
+      setOriginalPrice(price);
+      setStockQuantity(quantity);
+    } else {
+      setCurrentPrice(0);
+      setOriginalPrice(0);
+      setStockQuantity(0);
+    }
+  }, [selectedOptionId, variants]);
 
   // Hàm xử lý thêm vào giỏ hàng
   const handleAddToCart = async () => {
@@ -181,23 +149,14 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       return;
     }
 
-    const hasNonStandardStorage = storageOptions.some(opt => opt.rom?.toLowerCase() !== 'standard');
-    if (!selectedColor && hasNonStandardStorage && !selectedStorage) {
-      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc và dung lượng sản phẩm!' });
-      return;
-    }
-
     if (!selectedColor) {
-      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc!' });
+      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc sản phẩm!' });
       return;
     }
 
     // Kiểm tra phải chọn dung lượng (nếu có dung lượng không phải 'standard')
 
-    if (hasNonStandardStorage && !selectedStorage) {
-      setToast({ type: 'error', message: 'Vui lòng chọn dung lượng!' });
-      return;
-    }
+    // Storage validation removed
 
     if (!selectedOptionId) {
       alert('Vui lòng chọn đầy đủ thông tin sản phẩm!');
@@ -241,14 +200,8 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       return;
     }
 
-    const hasNonStandardStorage = storageOptions.some(opt => opt.rom?.toLowerCase() !== 'standard');
-    if (!selectedColor && hasNonStandardStorage && !selectedStorage) {
-      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc và dung lượng sản phẩm!' });
-      return;
-    }
-
     if (!selectedColor) {
-      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc!' });
+      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc sản phẩm!' });
       return;
     }
     
@@ -288,7 +241,13 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             itemId: Date.now(), // Tạo ID duy nhất
             productName: product.proName,
             productSlug: slug,
-            coverImage: images.length > 0 ? images[0].imageUrl : '',
+            coverImage: (() => {
+              if (images && images.length > 0) {
+                if (typeof images[0] === 'string') return images[0];
+                return images.find((img: any) => img.isCover)?.imageUrl || images[0]?.imageUrl || '';
+              }
+              return '';
+            })(),
             rom: selectedStorage || '',
             color: selectedColor || '',
             quantity: 1,
@@ -329,7 +288,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const storageOptions = Array.from(
     new Map(
       variants
-        .filter(v => v.rom && v.isActive)
+        .filter(v => v.rom && (v.isActive ?? (v as any).active))
         .map(v => [v.rom, v])
     ).values()
   );
@@ -337,7 +296,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const colorOptions = Array.from(
     new Map(
       variants
-        .filter(v => v.color && v.isActive)
+        .filter(v => v.color && (v.isActive ?? (v as any).active))
         .map(v => [v.color, v])
     ).values()
   );
@@ -348,7 +307,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
     return variants.some(v =>
       v.rom === rom &&
       v.color === selectedColor &&
-      v.isActive
+      (v.isActive ?? (v as any).active)
     );
   };
 
@@ -358,7 +317,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
     return variants.some(v =>
       v.color === color &&
       v.rom === selectedStorage &&
-      v.isActive
+      (v.isActive ?? (v as any).active)
     );
   };
 
@@ -403,11 +362,6 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const nextImage = () => setCurrentImage((prev) => (prev + 1) % images.length);
   const prevImage = () => setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
 
-  // Get current product image for modal
-  const currentProductImage = images.length > 0
-    ? `${process.env.NEXT_PUBLIC_API_URL}${images[0].imageUrl}`
-    : '';
-
   if (pageLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -428,6 +382,16 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       </div>
     );
   }
+
+  // Get current product image for modal
+  const firstImage = images.length > 0 ? images[0] : product.mainImage;
+  const firstImageUrl = typeof firstImage === 'string' ? firstImage : firstImage?.imageUrl;
+  
+  const currentProductImage = firstImageUrl
+    ? (firstImageUrl || '').startsWith('http')
+      ? firstImageUrl
+      : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${firstImageUrl}`
+    : '';
 
   return (
     <>
@@ -469,7 +433,14 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                   <AnimatePresence mode="wait">
                     <motion.img
                       key={currentImage}
-                      src={`${process.env.NEXT_PUBLIC_API_URL}${images[currentImage].imageUrl}`}
+                      src={(() => {
+                        const img = images[currentImage];
+                        const url = typeof img === 'string' ? img : img?.imageUrl;
+                        if (!url) return '';
+                        return url.startsWith('http')
+                          ? url
+                          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${url}`;
+                      })()}
                       alt={product.proName}
                       className="w-full h-full object-contain p-4 sm:p-8 lg:p-12"
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -519,7 +490,13 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                     className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg border-2 overflow-hidden ${currentImage === idx ? 'border-blue-500' : 'border-gray-200'}`}
                   >
                     <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL}${img.imageUrl}`}
+                      src={(() => {
+                        const url = typeof img === 'string' ? img : img?.imageUrl;
+                        if (!url) return '';
+                        return url.startsWith('http')
+                          ? url
+                          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${url}`;
+                      })()}
                       alt=""
                       className="w-full h-full object-cover"
                     />
@@ -575,56 +552,15 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                   </div>
                 )}
 
-                {storageOptions.length > 0 && storageOptions.some(opt => opt.rom?.toLowerCase() !== 'standard') && (
-                  <div className="mb-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                      <div className="text-sm font-semibold">Dung lượng:</div>
-                      <div className="flex gap-2">
-                        {storageOptions
-                          .filter(option => option.rom?.toLowerCase() !== 'standard')
-                          .map((option) => {
-                            const isAvailable = isStorageAvailable(option.rom);
-                            return (
-                              <button
-                                key={option.optionId}
-                                onClick={() => {
-                                  if (isAvailable) {
-                                    setSelectedStorage(selectedStorage === option.rom ? null : option.rom);
-                                  }
-                                }}
-                                disabled={!isAvailable}
-                                className={`relative px-3 py-1.5 rounded-lg border text-sm transition-all ${selectedStorage === option.rom
-                                  ? 'border-red-500'
-                                  : isAvailable
-                                    ? 'border-gray-200 hover:border-gray-300'
-                                    : 'border-gray-200 opacity-40 cursor-not-allowed'
-                                  }`}
-                                style={selectedStorage === option.rom ? { border: '1px solid #ef4444' } : {}}
-                              >
-                                <span className={!isAvailable ? 'text-gray-400' : ''}>
-                                  {option.rom}
-                                </span>
-                                {selectedStorage === option.rom && (
-                                  <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center shadow-md">
-                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  </div>
-                                )}
-                              </button>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
-                {colorOptions.length > 0 && (
+                {colorOptions.length > 0 && colorOptions.some(opt => opt.color?.toLowerCase() !== 'standard') && (
                   <div className="mb-6">
                     <div className="flex items-start gap-3 mb-2">
                       <div className="text-sm font-semibold whitespace-nowrap pt-1.5 pr-6">Màu sắc:</div>
                       <div className="flex flex-wrap gap-2">
-                        {colorOptions.map((option) => {
+                        {colorOptions
+                          .filter(option => option.color?.toLowerCase() !== 'standard')
+                          .map((option) => {
                           const isAvailable = isColorAvailable(option.color);
                           return (
                             <button
@@ -665,113 +601,6 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                   </div>
                 )}
 
-                {/* Specs */}
-                <motion.div
-                  className="bg-white"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <div className="flex items-center justify-between px-4 sm:p-6 border-b">
-                    <h3 className="font-bold text-base sm:text-lg">Thông số nổi bật</h3>
-                    <button className="text-red-600 text-xs sm:text-sm border px-3 sm:px-4 py-1.5 rounded-full hover:bg-red-50 transition whitespace-nowrap"
-                      style={{ border: '1px solid #ef4444' }}>
-                      Xem tất cả
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
-                    {product.specification ? (
-                      <>
-                        <div className="p-4 sm:p-6">
-                          <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Kích thước màn hình</div>
-                          <div className="flex items-center gap-3">
-                            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            <div className="font-bold text-lg sm:text-xl">
-                              {product.specification?.display?.split('"')[0]}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-4 sm:p-6">
-                          <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Camera</div>
-                          <div className="flex items-center gap-3">
-                            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <div className="font-bold text-lg sm:text-xl">{product.specification.cameraFront || 'N/A'}</div>
-                          </div>
-                        </div>
-                        <div className="p-4 sm:p-6">
-                          <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">RAM</div>
-                          <div className="flex items-center gap-3">
-                            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                            </svg>
-                            <div className="font-bold text-lg sm:text-xl">{product.specification.ram || 'N/A'}</div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="col-span-1 sm:col-span-3 p-6 sm:p-8 text-center">
-                        <div className="flex flex-col items-center gap-3">
-                          <svg className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                          </svg>
-                          <div className="text-gray-600">
-                            <div className="font-semibold text-base sm:text-lg mb-1">Sản phẩm phụ kiện</div>
-                            <div className="text-xs sm:text-sm">Thông số kỹ thuật không áp dụng cho sản phẩm này</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Product Policy */}
-                <motion.div
-                  className="bg-white mt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <div className="flex items-center justify-between px-4 sm:p-6 border-b">
-                    <h3 className="font-bold text-base sm:text-lg">Chính sách sản phẩm</h3>
-                    <button className="text-blue-600 text-xs sm:text-sm hover:underline">
-                      Tìm hiểu thêm
-                    </button>
-                  </div>
-                  <div className="p-4 sm:p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div className="flex items-center gap-3">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        <span className="text-xs sm:text-sm">Hàng chính hãng - Bảo hành 12 tháng</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                        </svg>
-                        <span className="text-xs sm:text-sm">Miễn phí giao hàng toàn quốc</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <span className="text-xs sm:text-sm">Kỹ thuật viên hỗ trợ trực tuyến</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span className="text-xs sm:text-sm">Hỗ trợ cài đặt miễn phí</span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-12 gap-2 sm:gap-3 mt-6">
@@ -824,7 +653,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         </div>
       </div>
       <div>
-        <DecSection productSlug={slug} />
+        <DecSection product={product} />
       </div>
       <div className="bg-[#F3F4F6]">
         {product?.proId && <ReviewSection proId={product.proId} />}

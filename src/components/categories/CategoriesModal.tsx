@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCategories } from '@/hooks/useCategory';
+import { Upload, X } from 'lucide-react';
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -19,7 +20,7 @@ interface FormErrors {
 }
 
 export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, category }: CategoryModalProps) {
-    const { createCategory, updateCategory, categories } = useCategories(100000);
+    const { createCategory, updateCategory, categories, loading } = useCategories(100000);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -32,6 +33,9 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
     const [errors, setErrors] = useState<FormErrors>({});
     const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+
     useEffect(() => {
         if (category) {
             setFormData({
@@ -41,6 +45,13 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
                 parentCategory: category.parentId || 'none',
                 isVisible: category.isActive,
             });
+            setPreviewImage(
+                category.categoryImage 
+                    ? category.categoryImage.startsWith('http')
+                        ? category.categoryImage
+                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${category.categoryImage}`
+                    : null
+            );
         } else {
             setFormData({
                 name: '',
@@ -49,11 +60,29 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
                 parentCategory: 'none',
                 isVisible: true,
             });
+            setPreviewImage(null);
         }
-        // Reset errors khi mở modal mới
+        setSelectedImage(null);
         setErrors({});
         setTouched({});
     }, [category, isOpen]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedImage(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeImage = () => {
+        setSelectedImage(null);
+        setPreviewImage(null);
+    };
 
     const buildCategoryOptions = (categories: any[], parentId: number | null = null, level = 0): { id: number; name: string }[] => {
         let result: { id: number; name: string }[] = [];
@@ -83,7 +112,6 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
                 if (value.trim().length > 100) {
                     return 'Tên danh mục không được vượt quá 100 ký tự';
                 }
-                // Kiểm tra trùng tên (trừ khi đang sửa chính nó)
                 const duplicateName = categories.find(
                     c => c.categoryName.toLowerCase() === value.trim().toLowerCase() 
                     && c.categoryId !== category?.categoryId
@@ -100,11 +128,9 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
                 break;
 
             case 'parentCategory':
-                // Kiểm tra không được chọn chính nó làm parent (khi đang sửa)
                 if (category && value !== 'none' && Number(value) === category.categoryId) {
                     return 'Không thể chọn chính danh mục này làm danh mục cha';
                 }
-                // Kiểm tra không được chọn con của nó làm parent (tránh vòng lặp)
                 if (category && value !== 'none') {
                     const isChildCategory = (parentId: number, targetId: number): boolean => {
                         const children = categories.filter(c => c.parentId === parentId);
@@ -122,79 +148,64 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
 
     const validateForm = (): boolean => {
         const newErrors: FormErrors = {};
-        
         newErrors.name = validateField('name', formData.name);
         newErrors.description = validateField('description', formData.description);
         newErrors.parentCategory = validateField('parentCategory', formData.parentCategory);
-
         setErrors(newErrors);
-        
-        // Đánh dấu tất cả các field đã touched
         setTouched({
             name: true,
             description: true,
             parentCategory: true,
         });
-
         return !Object.values(newErrors).some(error => error !== undefined);
     };
 
     const handleChange = (e: any) => {
         const { name, value, type, checked } = e.target;
         const newValue = type === 'checkbox' ? checked : value;
-        
-        setFormData(prev => ({
-            ...prev,
-            [name]: newValue,
-        }));
-
-        // Validate field khi thay đổi (nếu đã touched)
+        setFormData(prev => ({ ...prev, [name]: newValue }));
         if (touched[name]) {
             const error = validateField(name, newValue);
-            setErrors(prev => ({
-                ...prev,
-                [name]: error,
-            }));
+            setErrors(prev => ({ ...prev, [name]: error }));
         }
     };
 
     const handleBlur = (e: any) => {
         const { name } = e.target;
-        setTouched(prev => ({
-            ...prev,
-            [name]: true,
-        }));
-
-        // Validate field khi blur
+        setTouched(prev => ({ ...prev, [name]: true }));
         const error = validateField(name, formData[name as keyof typeof formData]);
-        setErrors(prev => ({
-            ...prev,
-            [name]: error,
-        }));
+        setErrors(prev => ({ ...prev, [name]: error }));
     };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
-
-        // Validate toàn bộ form
         if (!validateForm()) {
             setToast({ message: 'Vui lòng kiểm tra lại thông tin', type: 'error' });
             return;
         }
 
-        const payload = {
+        const payload: any = {
             categoryName: formData.name.trim(),
             description: formData.description.trim(),
             parentId: formData.parentCategory === 'none' ? null : Number(formData.parentCategory),
             isActive: formData.isVisible,
         };
 
+        // Nếu không chọn ảnh mới nhưng vẫn còn ảnh cũ (previewImage)
+        // thì gửi lại path ảnh cũ để không bị mất
+        if (!selectedImage && previewImage && !previewImage.startsWith('data:')) {
+            // Lấy phần path sau domain (nếu có)
+            const apiURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+            const imagePath = previewImage.replace(apiURL, '');
+            payload.categoryImage = imagePath;
+        }
+
         try {
             if (category) {
-                await updateCategory(category.slug, payload);
+                await updateCategory(category.slug, payload, selectedImage || undefined);
                 setToast({ message: 'Cập nhật danh mục thành công!', type: 'success' });
             } else {
-                await createCategory(payload);
+                await createCategory(payload, selectedImage || undefined);
                 setToast({ message: 'Thêm danh mục thành công!', type: 'success' });
             }
 
@@ -205,17 +216,16 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
                 parentCategory: 'none',
                 isVisible: true,
             });
+            setPreviewImage(null);
+            setSelectedImage(null);
 
             if (onSuccess) onSuccess(payload);
-
             onClose();
         } catch (err: any) {
             let message = 'Không thể lưu danh mục';
-
             if (err.response && err.response.data && err.response.data.message) {
                 message = err.response.data.message;
             }
-
             setToast({ message: `Lỗi: ${message}`, type: 'error' });
         }
     };
@@ -238,19 +248,20 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
                         transition={{ type: 'spring', duration: 0.5 }}
                         className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
                     >
-                        <div className="w-full max-w-lg rounded-xl bg-white dark:bg-slate-900 p-6 shadow-2xl pointer-events-auto">
-                            <div className="flex items-start justify-between">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                        <div className="w-full max-w-lg rounded-xl bg-white dark:bg-slate-900 p-5 shadow-2xl pointer-events-auto max-h-[90vh] flex flex-col">
+                            <div className="flex items-start justify-between flex-shrink-0">
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">
                                     {category ? 'Sửa Danh Mục' : 'Thêm Danh Mục Mới'}
                                 </h2>
                                 <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                            <div className="overflow-y-auto pr-2 mt-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                                <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                                         Tên Danh Mục <span className="text-red-500">*</span>
@@ -344,6 +355,42 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
 
                                 <div>
                                     <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        Ảnh Danh Mục
+                                    </label>
+                                    <div className="flex flex-col items-center gap-4">
+                                        {previewImage ? (
+                                            <div className="relative h-32 w-32 overflow-hidden rounded-lg border border-slate-200">
+                                                <img
+                                                    src={previewImage}
+                                                    alt="Preview"
+                                                    className="h-full w-full object-cover"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={removeImage}
+                                                    className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white shadow-md hover:bg-red-600 transition-colors"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <label className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
+                                                <Upload className="h-8 w-8 text-slate-400" />
+                                                <span className="mt-2 text-xs text-slate-500">Tải ảnh lên</span>
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleImageChange}
+                                                />
+                                            </label>
+                                        )}
+                                        <p className="text-[10px] text-slate-500">Định dạng: JPG, PNG, WEBP. Tối đa 2MB.</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                                         Trạng Thái
                                     </label>
                                     <div className="flex items-center gap-4">
@@ -361,22 +408,25 @@ export default function CategoryModal({ isOpen, onClose, setToast, onSuccess, ca
                                     </div>
                                 </div>
 
-                                <div className="mt-8 flex justify-end gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={onClose}
-                                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
-                                    >
-                                        Hủy
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {category ? 'Lưu thay đổi' : 'Thêm danh mục'}
-                                    </button>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3 flex-shrink-0 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    onClick={(e) => handleSubmit(e)}
+                                    disabled={loading}
+                                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Đang xử lý...' : category ? 'Lưu thay đổi' : 'Thêm danh mục'}
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </>

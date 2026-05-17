@@ -56,11 +56,11 @@ export function useCategories(initialLimit = 10) {
   );
 
   // --- Tạo category ---
-  const createCategory = useCallback(async (data: Partial<Category>) => {
+  const createCategory = useCallback(async (data: Partial<Category>, image?: File) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await categoryService.create(data);
+      const res = await categoryService.create(data, image);
       setCategories((prev) => [res, ...prev]);
       setTotal((prev) => prev + 1);
       return res;
@@ -74,11 +74,11 @@ export function useCategories(initialLimit = 10) {
 
   // --- Cập nhật category ---
   const updateCategory = useCallback(
-    async (slug: string, data: Partial<Category>) => {
+    async (slug: string, data: Partial<Category>, image?: File) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await categoryService.update(slug, data);
+        const res = await categoryService.update(slug, data, image);
         setCategories((prev) => prev.map((c) => (c.slug === slug ? res : c)));
         return res;
       } catch (err: any) {

@@ -190,7 +190,10 @@ export default function PostManagement() {
                                                 {post.thumbnail ? (
                                                     <div className="relative w-16 h-16 rounded-lg overflow-hidden">
                                                         <Image
-                                                            src={`${process.env.NEXT_PUBLIC_API_URL}${post.thumbnail}`}
+                                                            src={post.thumbnail.startsWith('http') 
+                                                                ? post.thumbnail 
+                                                                : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${post.thumbnail}`
+                                                            }
                                                             alt={post.title}
                                                             fill
                                                             className="object-cover"
@@ -212,7 +215,7 @@ export default function PostManagement() {
 
                                             {/* Tác giả */}
                                             <td className="px-4 py-4 text-sm text-gray-600">
-                                                {post.author.authorName || "Unknown"}
+                                                {post.author?.authorName || (post.author as any)?.fullName || "Unknown"}
                                             </td>
 
                                             {/* Danh mục */}

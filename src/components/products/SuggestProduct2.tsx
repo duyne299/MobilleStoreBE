@@ -1,11 +1,11 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import ProductCard from '@/components/products/ProductCard';
-import { useProducts } from '@/hooks/useProduct';
-import { useWarehouses } from '@/hooks/useWarehouse';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import ProductCard from "@/components/products/ProductCard";
+import { useProducts } from "@/hooks/useProduct";
+import { productService } from "@/services/productService";
 
 // Main Suggested Accessories Component
 export default function SuggestedAccessories() {
@@ -15,7 +15,6 @@ export default function SuggestedAccessories() {
   const [accessories, setAccessories] = useState<any[]>([]);
 
   const { getByCategoryId, loading } = useProducts();
-  const { getByProduct } = useWarehouses();
   const router = useRouter();
 
   useEffect(() => {
@@ -24,18 +23,18 @@ export default function SuggestedAccessories() {
     };
 
     checkMobile();
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Load sản phẩm phụ kiện từ category 17-21
+  // Load sản phẩm phụ kiện
   useEffect(() => {
     const loadAccessories = async () => {
       try {
-        const allAccessories: any[] = [];
+        let allAccessories: any[] = [];
 
-        // Lấy sản phẩm từ categoryId 17 đến 21
+        // Thử lấy theo categoryId 17-21
         for (let categoryId = 17; categoryId <= 21; categoryId++) {
           try {
             const categoryProducts = await getByCategoryId(categoryId);
@@ -43,68 +42,61 @@ export default function SuggestedAccessories() {
               allAccessories.push(...categoryProducts);
             }
           } catch (err) {
-            console.error(`Lỗi tải phụ kiện cho categoryId=${categoryId}:`, err);
+            // ignore
           }
         }
 
+        // Fallback lấy toàn bộ sản phẩm
+        if (allAccessories.length === 0) {
+          const res = await productService.getAll({ page: 1, limit: 10 });
+          allAccessories = res.data;
+        }
+
+        if (allAccessories.length === 0) return;
+
         // Shuffle ngẫu nhiên mảng
         const shuffled = [...allAccessories].sort(() => Math.random() - 0.5);
-        // Lấy 8 sản phẩm
         const randomAccessories = shuffled.slice(0, 8);
 
-        // Lấy thông tin warehouse cho từng sản phẩm
-        const accessoriesWithWarehouse = await Promise.all(
-          randomAccessories.map(async (product) => {
-            try {
-              const warehouseData = await getByProduct(product.proId);
+        // Tính toán giá và tồn kho từ variants
+        const accessoriesWithDetails = randomAccessories.map((product: any) => {
+          const variants = product.variants || [];
+          const availableVariants = variants.filter(
+            (v: any) => v.quantity > 0 && (v.isActive ?? v.active),
+          );
 
-              // Lọc warehouse có tồn kho > 0 và lấy giá thấp nhất
-              const availableWarehouses = warehouseData.filter(
-                (w: any) => w.quantity > 0
-              );
+          let lowestPrice = product.price || 0;
+          if (availableVariants.length > 0) {
+            lowestPrice = Math.min(
+              ...availableVariants.map((v: any) => v.baseSalePrice),
+            );
+          } else if (variants.length > 0) {
+            lowestPrice = Math.min(
+              ...variants.map((v: any) => v.baseSalePrice),
+            );
+          }
 
-              if (availableWarehouses.length > 0) {
-                const lowestPrice = Math.min(
-                  ...availableWarehouses.map((w: any) => w.baseSalePrice)
-                );
+          return {
+            ...product,
+            baseSalePrice: lowestPrice,
+            hasStock: availableVariants.length > 0,
+          };
+        });
 
-                return {
-                  ...product,
-                  baseSalePrice: lowestPrice,
-                  warehouseData: availableWarehouses
-                };
-              }
-
-              return {
-                ...product,
-                baseSalePrice: warehouseData[0]?.baseSalePrice || product.price,
-                warehouseData: warehouseData
-              };
-            } catch (error) {
-              console.error(`Lỗi khi tải warehouse cho phụ kiện ${product.proId}:`, error);
-              return {
-                ...product,
-                baseSalePrice: product.price,
-                warehouseData: []
-              };
-            }
-          })
-        );
-
-        setAccessories(accessoriesWithWarehouse);
+        setAccessories(accessoriesWithDetails);
       } catch (error) {
         console.error("Lỗi khi tải phụ kiện:", error);
       }
     };
 
     loadAccessories();
-  }, [getByCategoryId, getByProduct]);
+  }, [getByCategoryId]);
 
   // Format giá VND
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
@@ -115,12 +107,12 @@ export default function SuggestedAccessories() {
     return {
       newPrice: Math.round(price * (1 + discountPercent / 100)),
       discount: `-${discountPercent}%`,
-      savedAmount: Math.round(price * discountPercent / 100)
+      savedAmount: Math.round((price * discountPercent) / 100),
     };
   };
 
   const handleViewAll = () => {
-    router.push('/product?category=Phụ kiện');
+    router.push("/product?category=Phụ kiện");
   };
 
   const itemsPerView = isMobile ? 2 : 5;
@@ -128,13 +120,13 @@ export default function SuggestedAccessories() {
 
   const handleNext = () => {
     if (currentIndex < maxIndex) {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev) => prev + 1);
     }
   };
 
   const handlePrev = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
+      setCurrentIndex((prev) => prev - 1);
     }
   };
 
@@ -156,7 +148,6 @@ export default function SuggestedAccessories() {
   if (accessories.length === 0) {
     return null;
   }
-
   return (
     <div className="px-4 sm:px-12 md:px-16 lg:px-40 py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 rounded-2xl bg-white">
@@ -211,31 +202,51 @@ export default function SuggestedAccessories() {
             <motion.div
               className="flex gap-2 sm:gap-3"
               animate={{
-                x: `-${currentIndex * (100 / itemsPerView)}%`
+                x: `-${currentIndex * (100 / itemsPerView)}%`,
               }}
               transition={{
                 type: "spring",
                 stiffness: 300,
-                damping: 30
+                damping: 30,
               }}
             >
               {accessories.map((product, index) => {
-                const basePrice = product.baseSalePrice || product.price;
-                const { newPrice, discount, savedAmount } = calculateDiscount(basePrice, index);
-                const hasStock = product.warehouseData && product.warehouseData.some((w: any) => w.quantity > 0);
+                const basePrice = product.baseSalePrice ?? product.price ?? 0;
+                const { newPrice, discount, savedAmount } = calculateDiscount(
+                  basePrice,
+                  index,
+                );
+                const hasStock =
+                  product.warehouseData &&
+                  product.warehouseData.some((w: any) => w.quantity > 0);
 
+                let coverImage = null;
+                if (product.images && product.images.length > 0) {
+                  if (typeof product.images[0] === 'string') {
+                    coverImage = product.images[0];
+                  } else {
+                    coverImage = product.images.find((img: any) => img.isCover)?.imageUrl || product.images[0]?.imageUrl;
+                  }
+                }
+                if (!coverImage) {
+                  coverImage = product.mainImage;
+                }
                 const transformedProduct = {
                   id: product.proId,
                   name: product.proName,
                   slug: product.slug,
-                  image: `${process.env.NEXT_PUBLIC_API_URL}${product.images.find((img: any) => img.isCover)?.imageUrl}`,
-                  originalPrice: formatPrice(newPrice),
-                  price: formatPrice(basePrice),
+                  image: coverImage
+                    ? coverImage.startsWith("http")
+                      ? coverImage
+                      : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}${coverImage}`
+                    : "https://placehold.co/400x400?text=No+Image",
+                  originalPrice: formatPrice(basePrice),
+                  price: formatPrice(newPrice),
                   discount: discount,
                   savedAmount: formatPrice(savedAmount),
                   rating: product.rating || 4.5,
                   ratingCount: Math.floor(Math.random() * 1000) + 100,
-                  hasStock: hasStock
+                  hasStock: hasStock,
                   // Không có specs cho phụ kiện
                 };
 
@@ -243,7 +254,9 @@ export default function SuggestedAccessories() {
                   <div
                     key={product.proId}
                     className="flex-shrink-0"
-                    style={{ width: `calc(${100 / itemsPerView}% - ${(itemsPerView - 1) * (isMobile ? 8 : 12) / itemsPerView}px)` }}
+                    style={{
+                      width: `calc(${100 / itemsPerView}% - ${((itemsPerView - 1) * (isMobile ? 8 : 12)) / itemsPerView}px)`,
+                    }}
                   >
                     <ProductCard product={transformedProduct} />
                   </div>

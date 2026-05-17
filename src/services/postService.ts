@@ -9,9 +9,10 @@ export interface Post {
   excerpt?: string | null;
   isActive: boolean;
   createdAt: string;
-  author: {
-    authorName: string | null;
-  };
+  author?: {
+    authorName?: string | null;
+    fullName?: string | null;
+  } | null;
   categoryId: number;
 }
 
@@ -41,7 +42,7 @@ export const postService = {
   // Tạo bài viết mới (upload thumbnail)
   async create(
     data: Omit<Post, "postId" | "author" | "createdAt" | "updatedAt">,
-    file?: File
+    file?: File,
   ): Promise<Post> {
     const formData = new FormData();
     for (const key in data) {
@@ -55,7 +56,7 @@ export const postService = {
       }
     }
     if (file) {
-      formData.append("thumbnail", file);
+      formData.append("image", file);
     }
 
     const res = await axiosClient.post<Post>("/api/posts", formData, {
@@ -68,7 +69,7 @@ export const postService = {
   async update(
     slug: string,
     data: Partial<Omit<Post, "postId" | "author" | "createdAt" | "updatedAt">>,
-    file?: File
+    file?: File,
   ): Promise<Post> {
     const formData = new FormData();
 
@@ -84,7 +85,7 @@ export const postService = {
     }
 
     if (file) {
-      formData.append("thumbnail", file);
+      formData.append("image", file);
     }
 
     const res = await axiosClient.put<Post>(`/api/posts/${slug}`, formData, {

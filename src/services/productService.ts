@@ -38,7 +38,7 @@ export const productService = {
       formData.append(key, data[key]);
     }
     if (files && files.length > 0) {
-      files.forEach((file) => formData.append("files", file));
+      files.forEach((file) => formData.append("images", file));
     }
 
     const res = await axiosClient.put(`/api/products/${slug}`, formData, {

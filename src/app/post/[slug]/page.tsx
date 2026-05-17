@@ -19,7 +19,7 @@ export default function PostDetailPage() {
   const { categories } = useCategories();
 
   const [post, setPost] = useState<Post | null>(null);
-  const [fontSize, setFontSize] = useState('normal');
+  const [fontSize, setFontSize] = useState<'normal' | 'large'>('normal');
   const [relatedPosts, setRelatedPosts] = useState<Post[]>([]);
 
   const formatTimeAgo = (dateString: string) => {

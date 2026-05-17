@@ -5,7 +5,7 @@ import { Trash2, ChevronDown, Gift, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/useCart';
 import { useProducts } from '@/hooks/useProduct';
-import { useWarehouses } from '@/hooks/useWarehouse';
+import { useProductVariants } from '@/hooks/useVariant';
 import Toast from '@/components/ui/Toast';
 import Header from '@/components/ui/Header';
 import Footer from '@/components/ui/Footer';
@@ -39,7 +39,7 @@ export default function CartPage() {
         clearCart,
     } = useCart();
     const { getProductBySlug } = useProducts();
-    const { getByOption } = useWarehouses();
+    const { getProductByOptionId } = useProductVariants();
     
     const [enrichedItems, setEnrichedItems] = useState<EnrichedCartItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,13 +63,16 @@ export default function CartPage() {
                     items.map(async (item) => {
                         try {
                             const product = await getProductBySlug(item.option?.product?.slug || '');
-                            const coverImage = product.images?.find((img: any) => img.isCover)?.imageUrl ||
-                                product.images?.[0]?.imageUrl ||
-                                `https://via.placeholder.com/100?text=${product.proName}`;
+                            const coverImage = (() => {
+                                if (product.images && product.images.length > 0) {
+                                    if (typeof product.images[0] === 'string') return product.images[0];
+                                    return product.images.find((img: any) => img.isCover)?.imageUrl || product.images[0]?.imageUrl || '';
+                                }
+                                return product.mainImage || `https://via.placeholder.com/100?text=${product.proName}`;
+                            })();
                             
-                            const warehouseData = await getByOption(item.option?.optionId);
-                            const baseSalePrice = warehouseData?.baseSalePrice || 0;
-                            const availableQuantity = warehouseData?.quantity || 0;
+                            const baseSalePrice = item.option?.baseSalePrice || 0;
+                            const availableQuantity = item.option?.quantity || 0;
                             
                             return {
                                 itemId: item.itemId,
@@ -120,7 +123,7 @@ export default function CartPage() {
         };
         
         loadItemDetails();
-    }, [items, cartLoading, getProductBySlug, getByOption]);
+    }, [items, cartLoading, getProductBySlug]);
 
     useEffect(() => {
         if (toast) {
@@ -474,7 +477,12 @@ export default function CartPage() {
                                                 className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
                                             />
                                             <img
-                                                src={`${process.env.NEXT_PUBLIC_API_URL}${item.coverImage}`}
+                                                src={item.coverImage
+                                                    ? item.coverImage.startsWith('http')
+                                                        ? item.coverImage
+                                                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${item.coverImage}`
+                                                    : 'https://via.placeholder.com/100?text=No+Image'
+                                                }
                                                 alt={item.productName}
                                                 className="w-20 h-20 object-cover rounded-lg"
                                             />

@@ -9,6 +9,7 @@ interface FetchParams {
   orderType?: string;
   dateFrom?: string;
   dateTo?: string;
+  userId?: number;
 }
 
 export function useOrders(initialLimit = 10) {
@@ -33,6 +34,7 @@ export function useOrders(initialLimit = 10) {
       orderType = "all",
       dateFrom = "",
       dateTo = "",
+      userId,
     }: FetchParams = {}) => {
       setLoading(true);
       setError(null);
@@ -45,6 +47,7 @@ export function useOrders(initialLimit = 10) {
           orderType: orderType !== "all" ? orderType : undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
+          userId,
         });
         setOrders(res.orders);
         setTotal(res.total);

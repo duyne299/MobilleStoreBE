@@ -208,5 +208,19 @@ export function useProductVariants(initialLimit = 10) {
     removeVariant,
     fetchByProductId,
     getProductByOptionId,
+    updateStock: async (id: number, quantityAdjustment: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await productVariantService.updateStock(id, quantityAdjustment);
+        setVariants((prev) => prev.map((v) => (v.optionId === id ? res : v)));
+        return res;
+      } catch (err: any) {
+        setError(err.message || "Lỗi cập nhật tồn kho");
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
   };
 }

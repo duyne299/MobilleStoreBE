@@ -61,7 +61,10 @@ export default function BannerManagement() {
     if (!confirmDelete.bannerId) return;
     try {
       await deleteBanner(confirmDelete.bannerId);
-      showToast("success", `Xóa banner "${confirmDelete.bannerTitle}" thành công!`);
+      showToast(
+        "success",
+        `Xóa banner "${confirmDelete.bannerTitle}" thành công!`,
+      );
       setConfirmDelete({ show: false });
     } catch (err) {
       showToast("error", "Xóa banner thất bại!");
@@ -109,13 +112,9 @@ export default function BannerManagement() {
               Dashboard
             </Link>
             <span>/</span>
-            <span className="font-medium text-gray-800">
-              Banner
-            </span>
+            <span className="font-medium text-gray-800">Banner</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Quản lý Banner
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý Banner</h1>
         </motion.header>
 
         {/* ERROR MESSAGE */}
@@ -198,7 +197,10 @@ export default function BannerManagement() {
                 <tbody className="divide-y divide-gray-200">
                   {banners.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                      <td
+                        colSpan={8}
+                        className="px-4 py-8 text-center text-gray-500"
+                      >
                         Không có banner nào
                       </td>
                     </tr>
@@ -254,9 +256,7 @@ export default function BannerManagement() {
                         <td className="px-4 py-4 max-w-[150px] relative group">
                           <div className="flex items-center gap-2">
                             <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                            <span
-                              className="text-sm text-blue-600 truncate"
-                            >
+                            <span className="text-sm text-blue-600 truncate">
                               {banner.linkTarget || "—"}
                             </span>
                             <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 w-max max-w-xs hidden group-hover:block bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
@@ -288,7 +288,7 @@ export default function BannerManagement() {
                           onDoubleClick={() =>
                             handleUpdateStatus(
                               banner.bannerId,
-                              !banner.isActive
+                              !banner.isActive,
                             )
                           }
                         >
@@ -298,10 +298,11 @@ export default function BannerManagement() {
                             </span>
                           ) : (
                             <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${banner.isActive
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-700"
-                                }`}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                banner.isActive
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
                             >
                               {banner.isActive ? "Hoạt động" : "Tạm dừng"}
                             </span>
@@ -326,10 +327,7 @@ export default function BannerManagement() {
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               onClick={() =>
-                                handleDeleteClick(
-                                  banner.bannerId,
-                                  banner.title
-                                )
+                                handleDeleteClick(banner.bannerId, banner.title)
                               }
                               className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             >
@@ -372,10 +370,11 @@ export default function BannerManagement() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => nextPage(p)}
-                  className={`w-10 h-10 rounded-lg ${p === currentPage
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-600 hover:bg-gray-100"
-                    }`}
+                  className={`w-10 h-10 rounded-lg ${
+                    p === currentPage
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
                 >
                   {p}
                 </motion.button>
@@ -385,9 +384,7 @@ export default function BannerManagement() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() =>
-                  nextPage(Math.min(totalPages, currentPage + 1))
-                }
+                onClick={() => nextPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
               >

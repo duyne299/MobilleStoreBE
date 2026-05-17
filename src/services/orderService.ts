@@ -36,6 +36,7 @@ interface FindAllParams {
   orderType?: string;
   dateFrom?: string;
   dateTo?: string;
+  userId?: number;
 }
 
 export const orderService = {

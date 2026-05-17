@@ -1,6 +1,5 @@
   import { useState, useEffect, useCallback, use } from "react";
   import { productService } from "../services/productService";
-  import { useWarehouses } from "./useWarehouse";
   import { useOrders } from "@/hooks/useOrder";
   import { useReviews } from "@/hooks/useReview";
 
@@ -19,7 +18,6 @@
     const [total, setTotal] = useState(0);
     const [search, setSearch] = useState("");
 
-    const { getByProduct } = useWarehouses();
     const { getSoldQuantityByProduct } = useOrders();
     const { getRating } = useReviews();
 
@@ -44,10 +42,9 @@
                   soldQuantity: 0,
                 };
 
-              // Lấy tổng số lượng trong kho
-              const warehouseItems = await getByProduct(p.proId);
-              const totalQuantity = warehouseItems.reduce(
-                (sum, item) => sum + (item.quantity || 0),
+              // Lấy tổng số lượng từ variants
+              const totalQuantity = (p.variants || []).reduce(
+                (sum: number, v: any) => sum + (v.quantity || 0),
                 0
               );
               // Lấy số lượng đã bán
@@ -91,7 +88,7 @@
           setLoading(false);
         }
       },
-      [initialLimit, getByProduct, getSoldQuantityByProduct]
+      [initialLimit, getSoldQuantityByProduct, getRating]
     );
 
     // search sản phẩm
@@ -129,10 +126,9 @@
             };
           }
 
-          // Lấy tổng số lượng trong kho
-          const warehouseItems = await getByProduct(res.proId);
-          const totalQuantity = warehouseItems.reduce(
-            (sum, item) => sum + (item.quantity || 0),
+          // Lấy tổng số lượng từ variants
+          const totalQuantity = (res.variants || []).reduce(
+            (sum: number, v: any) => sum + (v.quantity || 0),
             0
           );
 
@@ -173,7 +169,7 @@
           setLoading(false);
         }
       },
-      [getByProduct, getSoldQuantityByProduct, getRating]
+      [getSoldQuantityByProduct, getRating]
     );
 
     const createProduct = useCallback(async (data: any, files?: File[]) => {
@@ -272,10 +268,9 @@
                 };
               }
 
-              // Tổng số lượng trong kho
-              const warehouseItems = await getByProduct(p.proId);
-              const totalQuantity = warehouseItems.reduce(
-                (sum, item) => sum + (item.quantity || 0),
+              // Tổng số lượng từ variants
+              const totalQuantity = (p.variants || []).reduce(
+                (sum: number, v: any) => sum + (v.quantity || 0),
                 0
               );
 
@@ -320,7 +315,7 @@
           setLoading(false);
         }
       },
-      [getByProduct, getSoldQuantityByProduct, getRating]
+      [getSoldQuantityByProduct, getRating]
     );
 
     useEffect(() => {

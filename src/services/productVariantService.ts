@@ -22,6 +22,10 @@ export interface ProductVariant {
   color: string | null;
   extraPrice: number;
   isActive: boolean;
+  warehouseId?: number;
+  quantity?: number;
+  importPrice?: number;
+  baseSalePrice?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,7 +52,7 @@ export const productVariantService = {
   // Cập nhật
   update: async (
     id: number,
-    data: Partial<ProductVariant>
+    data: Partial<ProductVariant>,
   ): Promise<ProductVariant> => {
     const res = await axiosClient.put(`/product-options/${id}`, data);
     return res.data;
@@ -57,7 +61,7 @@ export const productVariantService = {
   // Cập nhật trạng thái active/inactive
   updateStatus: async (
     id: number,
-    isActive: boolean
+    isActive: boolean,
   ): Promise<ProductVariant> => {
     const res = await axiosClient.patch(`/product-options/${id}/status`, {
       isActive,
@@ -77,9 +81,19 @@ export const productVariantService = {
   },
 
   getProductByOptionId: async (
-    optionId: number
+    optionId: number,
   ): Promise<ProductVariantProduct> => {
     const res = await axiosClient.get(`/product-options/${optionId}/product`);
+    return res.data;
+  },
+  // Cập nhật số lượng tồn kho
+  updateStock: async (
+    id: number,
+    quantityAdjustment: number,
+  ): Promise<ProductVariant> => {
+    const res = await axiosClient.patch(`/product-options/${id}/stock`, {
+      quantityAdjustment,
+    });
     return res.data;
   },
 };

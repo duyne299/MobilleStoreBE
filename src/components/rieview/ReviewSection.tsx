@@ -27,7 +27,10 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
     { id: string; url: string; file: File }[]
   >([]);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(true);
 
@@ -70,7 +73,8 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
   // Normalize incoming reviews to ensure consistent fields and types
   const normalizedReviews = useMemo(() => {
     return (reviews || []).map((r: any, idx: number) => {
-      const ratingNum = typeof r.rating === "string" ? Number(r.rating) : r.rating ?? 0;
+      const ratingNum =
+        typeof r.rating === "string" ? Number(r.rating) : (r.rating ?? 0);
       const comment = r.comment ?? r.content ?? r.text ?? r.message ?? "";
       const id = r.reviewId ?? r.id ?? r._id ?? `review-${idx}`;
       const userName = r.user?.name ?? r.userName ?? r.username ?? "Người dùng";
@@ -94,7 +98,20 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
       }
 
       const likes = r.likes ?? 0;
-      const images = r.images ?? [];
+
+      // Eagerly convert both reviewImages (list of strings) and images (list of ReviewImage objects)
+      let imagesList: { imageUrl: string }[] = [];
+      if (Array.isArray(r.reviewImages)) {
+        imagesList = r.reviewImages.map((img: any) => {
+          if (typeof img === "string") return { imageUrl: img };
+          return { imageUrl: img?.imageUrl || "" };
+        });
+      } else if (Array.isArray(r.images)) {
+        imagesList = r.images.map((img: any) => {
+          if (typeof img === "string") return { imageUrl: img };
+          return { imageUrl: img?.imageUrl || "" };
+        });
+      }
 
       return {
         ...r,
@@ -105,14 +122,15 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
         userAvatar,
         timeAgo,
         likes,
-        images,
+        images: imagesList,
       };
     });
   }, [reviews]);
 
   const filteredReviews = useMemo(() => {
     if (selectedFilter === "all") return normalizedReviews;
-    if (selectedFilter === "comment") return normalizedReviews.filter((r) => r.rating === 0);
+    if (selectedFilter === "comment")
+      return normalizedReviews.filter((r) => r.rating === 0);
     const ratingNumber = Number(selectedFilter);
     if (!Number.isNaN(ratingNumber)) {
       return normalizedReviews.filter((r) => r.rating === ratingNumber);
@@ -120,10 +138,16 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
     return normalizedReviews;
   }, [normalizedReviews, selectedFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredReviews.length / reviewsPerPage));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredReviews.length / reviewsPerPage),
+  );
   const indexOfLastReview = currentPage * reviewsPerPage;
   const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
-  const currentReviews = filteredReviews.slice(indexOfFirstReview, indexOfLastReview);
+  const currentReviews = filteredReviews.slice(
+    indexOfFirstReview,
+    indexOfLastReview,
+  );
 
   // Handle image upload and create object URLs for preview
   const handleImageUpload = (e: any) => {
@@ -136,7 +160,7 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
     if (files.length > remainingSlots) {
       setToast({
         type: "error",
-        message: `Chỉ có thể tải lên tối đa 5 ảnh. Đã bỏ qua ${files.length - remainingSlots} ảnh.`
+        message: `Chỉ có thể tải lên tối đa 5 ảnh. Đã bỏ qua ${files.length - remainingSlots} ảnh.`,
       });
     }
 
@@ -208,7 +232,10 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
       const imageFiles = uploadedImages.map((img) => img.file);
 
-      await createReview(reviewData, imageFiles.length > 0 ? imageFiles : undefined);
+      await createReview(
+        reviewData,
+        imageFiles.length > 0 ? imageFiles : undefined,
+      );
 
       // Refetch reviews to show the new one
       if (proId !== undefined && proId !== null) {
@@ -235,15 +262,19 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
       setToast({
         type: "success",
-        message: selectedRating > 0
-          ? "Đánh giá của bạn đã được gửi!"
-          : "Bình luận của bạn đã được gửi!",
+        message:
+          selectedRating > 0
+            ? "Đánh giá của bạn đã được gửi!"
+            : "Bình luận của bạn đã được gửi!",
       });
 
       // Jump to first page to show newest
       setCurrentPage(1);
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Có lỗi xảy ra, vui lòng thử lại";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Có lỗi xảy ra, vui lòng thử lại";
       setToast({
         type: "error",
         message: errorMessage,
@@ -253,15 +284,17 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
     }
   };
 
-  const renderStars = (count: number) => (
+  const renderStars = (count: number) =>
     [...Array(5)].map((_, i) => (
       <span key={i} className={i < count ? "text-yellow-400" : "text-gray-300"}>
         ★
       </span>
-    ))
-  );
+    ));
 
-  const renderInteractiveStars = (current: number, onChange: (rating: number) => void) => (
+  const renderInteractiveStars = (
+    current: number,
+    onChange: (rating: number) => void,
+  ) => (
     <div className="flex gap-1 items-center">
       {[1, 2, 3, 4, 5].map((rating) => (
         <button
@@ -269,10 +302,15 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
           type="button"
           onClick={() => onChange(rating)}
           disabled={!hasPurchased}
-          className={`text-2xl sm:text-3xl transition-transform ${hasPurchased ? "hover:scale-110 cursor-pointer" : "cursor-not-allowed opacity-50"
-            }`}
+          className={`text-2xl sm:text-3xl transition-transform ${
+            hasPurchased
+              ? "hover:scale-110 cursor-pointer"
+              : "cursor-not-allowed opacity-50"
+          }`}
         >
-          <span className={rating <= current ? "text-yellow-400" : "text-gray-300"}>
+          <span
+            className={rating <= current ? "text-yellow-400" : "text-gray-300"}
+          >
             ★
           </span>
         </button>
@@ -289,9 +327,16 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
   );
 
   const averageRating = useMemo(() => {
-    const reviewsWithRating = normalizedReviews.filter((r: any) => r.rating > 0);
+    const reviewsWithRating = normalizedReviews.filter(
+      (r: any) => r.rating > 0,
+    );
     return reviewsWithRating.length > 0
-      ? (reviewsWithRating.reduce((sum: number, r: any) => sum + (Number(r.rating) || 0), 0) / reviewsWithRating.length).toFixed(1)
+      ? (
+          reviewsWithRating.reduce(
+            (sum: number, r: any) => sum + (Number(r.rating) || 0),
+            0,
+          ) / reviewsWithRating.length
+        ).toFixed(1)
       : "0";
   }, [normalizedReviews]);
 
@@ -303,8 +348,12 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
     return dist;
   }, [normalizedReviews]);
 
-  const totalReviews = normalizedReviews.filter((r: any) => r.rating > 0).length;
-  const totalComments = normalizedReviews.filter((r: any) => r.rating === 0).length;
+  const totalReviews = normalizedReviews.filter(
+    (r: any) => r.rating > 0,
+  ).length;
+  const totalComments = normalizedReviews.filter(
+    (r: any) => r.rating === 0,
+  ).length;
 
   return (
     <>
@@ -312,24 +361,34 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
       <div className="w-full max-w-7xl mx-auto sm:p-6 lg:px-8 bg-white rounded-2xl lg:pr-60">
         {/* Rating Summary */}
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Đánh giá và bình luận</h2>
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
+          Đánh giá và bình luận
+        </h2>
 
         <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8 mb-6 sm:mb-8">
           {/* Average Rating */}
           <div className="flex flex-col items-center w-full lg:w-auto">
-            <div className="text-4xl sm:text-5xl font-bold mb-2">{averageRating}</div>
+            <div className="text-4xl sm:text-5xl font-bold mb-2">
+              {averageRating}
+            </div>
             <div className="flex mb-2 text-xl sm:text-2xl">
               {renderStars(Math.floor(Number(averageRating)))}
             </div>
-            <div className="text-sm text-gray-500 mb-1">{totalReviews} đánh giá</div>
-            <div className="text-sm text-gray-500 mb-3">{totalComments} bình luận</div>
+            <div className="text-sm text-gray-500 mb-1">
+              {totalReviews} đánh giá
+            </div>
+            <div className="text-sm text-gray-500 mb-3">
+              {totalComments} bình luận
+            </div>
           </div>
 
           {/* Rating Distribution */}
           <div className="flex-1 w-full">
             {[5, 4, 3, 2, 1].map((rating) => (
               <div key={rating} className="flex items-center gap-2 mb-2">
-                <span className="text-xs sm:text-sm w-12 sm:w-8">{rating} ⭐</span>
+                <span className="text-xs sm:text-sm w-12 sm:w-8">
+                  {rating} ⭐
+                </span>
                 <div className="flex-1 bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-red-500 h-2 rounded-full transition-all duration-300"
@@ -358,20 +417,22 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
           <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:ml-auto">
             <button
               onClick={() => setSelectedFilter("all")}
-              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition ${selectedFilter === "all"
+              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition ${
+                selectedFilter === "all"
                   ? "bg-red-50 border-red-500 text-red-500"
                   : "border-gray-300 hover:border-gray-400"
-                }`}
+              }`}
             >
               Tất cả
             </button>
 
             <button
               onClick={() => setSelectedFilter("comment")}
-              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition ${selectedFilter === "comment"
+              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition ${
+                selectedFilter === "comment"
                   ? "bg-red-50 border-red-500 text-red-500"
                   : "border-gray-300 hover:border-gray-400"
-                }`}
+              }`}
             >
               💬 Bình luận ({totalComments})
             </button>
@@ -380,10 +441,11 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
               <button
                 key={stars}
                 onClick={() => setSelectedFilter(stars.toString())}
-                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition ${selectedFilter === stars.toString()
+                className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm border transition ${
+                  selectedFilter === stars.toString()
                     ? "bg-red-50 border-red-500 text-red-500"
                     : "border-gray-300 hover:border-gray-400"
-                  }`}
+                }`}
               >
                 {stars} ⭐
               </button>
@@ -396,9 +458,7 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
           {/* Star Rating Selection */}
           <div className="mb-3">
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <label className="text-sm font-medium">
-                Đánh giá sản phẩm:
-              </label>
+              <label className="text-sm font-medium">Đánh giá sản phẩm:</label>
               {checkingPurchase ? (
                 <span className="text-xs text-gray-500">Đang kiểm tra...</span>
               ) : !hasPurchased ? (
@@ -424,11 +484,18 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
               placeholder={
-                selectedRating > 0
-                  ? "Chia sẻ đánh giá của bạn về sản phẩm..."
-                  : "Nhập nội dung bình luận..."
+                !hasPurchased
+                  ? "Bạn cần mua sản phẩm này trước khi có thể gửi đánh giá hoặc bình luận..."
+                  : selectedRating > 0
+                    ? "Chia sẻ đánh giá của bạn về sản phẩm..."
+                    : "Nhập nội dung bình luận..."
               }
-              className="w-full border border-gray-300 rounded-lg p-3 pr-16 sm:pr-24 resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-sm sm:text-base"
+              disabled={!hasPurchased}
+              className={`w-full border border-gray-300 rounded-lg p-3 pr-16 sm:pr-24 resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-sm sm:text-base ${
+                !hasPurchased
+                  ? "bg-gray-100 cursor-not-allowed text-gray-400"
+                  : ""
+              }`}
               rows={3}
               maxLength={3000}
             />
@@ -439,20 +506,27 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
           {/* Image Upload */}
           <div className="mt-3 flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2">
-            <label className="cursor-pointer flex-shrink-0">
+            <label
+              className={`flex-shrink-0 ${!hasPurchased ? "cursor-not-allowed" : "cursor-pointer"}`}
+            >
               <input
                 type="file"
                 multiple
                 accept="image/*"
                 className="hidden"
                 onChange={handleImageUpload}
-                disabled={uploadedImages.length >= 5}
+                disabled={uploadedImages.length >= 5 || !hasPurchased}
               />
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 border-2 border-dashed rounded-lg flex items-center justify-center transition ${uploadedImages.length >= 5
-                  ? "border-gray-200 bg-gray-100 cursor-not-allowed"
-                  : "border-gray-300 hover:border-red-500 cursor-pointer"
-                }`}>
-                <span className={`text-xl sm:text-2xl ${uploadedImages.length >= 5 ? "text-gray-300" : "text-gray-400"}`}>
+              <div
+                className={`w-14 h-14 sm:w-16 sm:h-16 border-2 border-dashed rounded-lg flex items-center justify-center transition ${
+                  uploadedImages.length >= 5 || !hasPurchased
+                    ? "border-gray-200 bg-gray-100 cursor-not-allowed"
+                    : "border-gray-300 hover:border-red-500 cursor-pointer"
+                }`}
+              >
+                <span
+                  className={`text-xl sm:text-2xl ${uploadedImages.length >= 5 || !hasPurchased ? "text-gray-300" : "text-gray-400"}`}
+                >
                   +
                 </span>
               </div>
@@ -466,7 +540,11 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="relative w-14 h-14 sm:w-16 sm:h-16 group flex-shrink-0"
               >
-                <img src={image.url} className="w-full h-full object-cover rounded-lg" alt="Preview" />
+                <img
+                  src={image.url}
+                  className="w-full h-full object-cover rounded-lg"
+                  alt="Preview"
+                />
                 <button
                   onClick={() => removeImage(image.id)}
                   className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition"
@@ -485,10 +563,16 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
           <button
             onClick={handleSubmitReview}
-            disabled={submitting || !reviewText.trim()}
+            disabled={submitting || !reviewText.trim() || !hasPurchased}
             className="mt-3 bg-black text-white px-5 sm:px-6 py-2 rounded-lg hover:bg-gray-800 transition text-sm sm:text-base w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? "Đang gửi..." : selectedRating > 0 ? "Gửi đánh giá" : "Gửi bình luận"}
+            {submitting
+              ? "Đang gửi..."
+              : !hasPurchased
+                ? "Cần mua hàng để đánh giá"
+                : selectedRating > 0
+                  ? "Gửi đánh giá"
+                  : "Gửi bình luận"}
           </button>
         </div>
 
@@ -527,14 +611,21 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
             {!loading &&
               currentReviews.map((review: any) => (
-                <div key={review.id} className="border-b pb-4 sm:pb-6 last:border-b-0">
+                <div
+                  key={review.id}
+                  className="border-b pb-4 sm:pb-6 last:border-b-0"
+                >
                   <div className="flex gap-2 sm:gap-3">
                     {/* User Avatar */}
                     <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-full flex items-center justify-center font-semibold text-white flex-shrink-0 text-sm sm:text-base overflow-hidden">
                       {review.user?.avatar ? (
-                        <img src={`${process.env.NEXT_PUBLIC_API_URL}${review.user.avatar}`} alt={review.userName} className="w-full h-full object-cover" />
+                        <img
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${review.user.avatar}`}
+                          alt={review.userName}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        review.user?.fullName?.[0]?.toUpperCase() ?? "?"
+                        (review.user?.fullName?.[0]?.toUpperCase() ?? "?")
                       )}
                     </div>
 
@@ -577,7 +668,10 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
                               className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition"
                               onClick={() => {
                                 // TODO: Add lightbox/modal for full image view
-                                window.open(img.imageUrl, '_blank');
+                                window.open(
+                                  `${process.env.NEXT_PUBLIC_API_URL}${img.imageUrl}`,
+                                  "_blank",
+                                );
                               }}
                             />
                           ))}
@@ -586,13 +680,15 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
                       {/* Action Buttons */}
                       <div className="flex items-center gap-3 sm:gap-4">
-                        <button className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition">
+                        {/* <button className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition">
                           <span className="text-sm sm:text-base">👍</span>
-                          <span className="text-xs sm:text-sm">{review.likes || 0}</span>
-                        </button>
-                        <button className="text-gray-500 hover:text-red-500 text-xs sm:text-sm transition">
+                          <span className="text-xs sm:text-sm">
+                            {review.likes || 0}
+                          </span>
+                        </button> */}
+                        {/* <button className="text-gray-500 hover:text-red-500 text-xs sm:text-sm transition">
                           ↩ Trả lời
-                        </button>
+                        </button> */}
                       </div>
                     </div>
                   </div>
@@ -622,7 +718,10 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
 
               if (!showPage) {
                 // Show ellipsis
-                if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                if (
+                  pageNum === currentPage - 2 ||
+                  pageNum === currentPage + 2
+                ) {
                   return (
                     <span key={i} className="px-2 text-gray-400">
                       ...
@@ -636,10 +735,11 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
                 <button
                   key={i}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-2 sm:px-3 py-1 border rounded transition text-sm sm:text-base ${currentPage === pageNum
+                  className={`px-2 sm:px-3 py-1 border rounded transition text-sm sm:text-base ${
+                    currentPage === pageNum
                       ? "bg-red-500 text-white border-red-500"
                       : "hover:bg-gray-50"
-                    }`}
+                  }`}
                 >
                   {pageNum}
                 </button>
@@ -647,7 +747,9 @@ export default function ReviewSection({ proId }: ReviewSectionProps) {
             })}
 
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               disabled={currentPage === totalPages}
               className="px-2 sm:px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >

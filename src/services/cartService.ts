@@ -22,6 +22,8 @@ export interface Option {
   createdAt: string;
   updatedAt: string;
   product: Product;
+  baseSalePrice?: number;
+  quantity?: number;
 }
 
 export interface CartItem {

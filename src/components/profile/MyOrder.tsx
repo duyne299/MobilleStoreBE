@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Package,
@@ -9,64 +9,75 @@ import {
   Truck,
   Search,
   Filter,
-  ChevronDown
-} from 'lucide-react';
-import { useOrders } from '@/hooks/useOrder';
-import OrderDetail from '@/components/profile/OrderDetail';
+  ChevronDown,
+} from "lucide-react";
+import { useOrders } from "@/hooks/useOrder";
+import OrderDetail from "@/components/profile/OrderDetail";
 
 interface MyOrdersProps {
   onBack: () => void;
 }
 
-const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
+const statusConfig: Record<
+  string,
+  { label: string; color: string; bgColor: string; icon: any }
+> = {
   PENDING: {
-    label: 'Chờ xử lý',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    icon: Clock
+    label: "Chờ xử lý",
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-50",
+    icon: Clock,
   },
   CONFIRMED: {
-    label: 'Đã xác nhận',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    icon: CheckCircle
+    label: "Đã xác nhận",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    icon: CheckCircle,
   },
   WAITING_PICKUP: {
-    label: 'Chờ lấy hàng',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    icon: Truck
+    label: "Chờ lấy hàng",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50",
+    icon: Truck,
   },
   SHIPPING: {
-    label: 'Đang giao',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    icon: Truck
+    label: "Đang giao",
+    color: "text-purple-600",
+    bgColor: "bg-purple-50",
+    icon: Truck,
   },
   COMPLETED: {
-    label: 'Hoàn thành',
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    icon: CheckCircle
+    label: "Hoàn thành",
+    color: "text-green-600",
+    bgColor: "bg-green-50",
+    icon: CheckCircle,
   },
   CANCELLED: {
-    label: 'Đã hủy',
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    icon: XCircle
-  }
+    label: "Đã hủy",
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+    icon: XCircle,
+  },
 };
 
 const orderTypeConfig = {
-  PICKUP: { label: 'Lấy tại cửa hàng', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  DELIVERY: { label: 'Giao hàng', color: 'text-green-600', bgColor: 'bg-green-50' }
+  PICKUP: {
+    label: "Lấy tại cửa hàng",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+  },
+  DELIVERY: {
+    label: "Giao hàng",
+    color: "text-green-600",
+    bgColor: "bg-green-50",
+  },
 };
 
 export default function MyOrders({ onBack }: MyOrdersProps) {
   const [userId, setUserId] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedOrderType, setSelectedOrderType] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedOrderType, setSelectedOrderType] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
@@ -78,12 +89,12 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
     total,
     limit,
     fetchOrders,
-    nextPage
+    nextPage,
   } = useOrders(10);
 
   // Lấy userId từ localStorage
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem("user");
     if (userStr) {
       const userData = JSON.parse(userStr);
       setUserId(userData.userId);
@@ -93,28 +104,30 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
   // Fetch orders khi có userId
   useEffect(() => {
     if (userId) {
-      fetchOrders({ page: 1, limit: 10 });
+      fetchOrders({ page: 1, limit: 10, userId });
     }
-  }, [userId]);
+  }, [userId, fetchOrders]);
 
   // Lọc orders theo userId và các filter khác
   const getFilteredOrders = () => {
-    let filtered = orders.filter(order => order.user?.userId === userId);
+    let filtered = orders;
 
     // Lọc theo trạng thái
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(order => order.status === selectedStatus);
+    if (selectedStatus !== "all") {
+      filtered = filtered.filter((order) => order.status === selectedStatus);
     }
 
     // Lọc theo loại đơn hàng
-    if (selectedOrderType !== 'all') {
-      filtered = filtered.filter(order => order.orderType === selectedOrderType);
+    if (selectedOrderType !== "all") {
+      filtered = filtered.filter(
+        (order) => order.orderType === selectedOrderType,
+      );
     }
 
     // Lọc theo tìm kiếm
     if (searchTerm.trim()) {
-      filtered = filtered.filter(order =>
-        order.orderCode.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter((order) =>
+        order.orderCode.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -132,26 +145,26 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
   };
 
   const handleResetFilters = () => {
-    setSelectedStatus('all');
-    setSelectedOrderType('all');
-    setSearchTerm('');
+    setSelectedStatus("all");
+    setSelectedOrderType("all");
+    setSearchTerm("");
     setShowFilters(false);
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -207,7 +220,10 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
       <div className="mb-6 space-y-4">
         <div className="flex gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Tìm kiếm theo mã đơn hàng..."
@@ -222,7 +238,10 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
           >
             <Filter size={20} />
             <span>Lọc</span>
-            <ChevronDown size={16} className={`transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={16}
+              className={`transform transition-transform ${showFilters ? "rotate-180" : ""}`}
+            />
           </button>
         </div>
 
@@ -231,7 +250,7 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
           {showFilters && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
@@ -248,7 +267,9 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
                     >
                       <option value="all">Tất cả</option>
                       {Object.entries(statusConfig).map(([key, config]) => (
-                        <option key={key} value={key}>{config.label}</option>
+                        <option key={key} value={key}>
+                          {config.label}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -298,9 +319,11 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
         <div className="text-center py-12">
           <Package size={64} className="mx-auto text-gray-300 mb-4" />
           <p className="text-gray-500 text-lg">
-            {searchTerm || selectedStatus !== 'all' || selectedOrderType !== 'all'
-              ? 'Không tìm thấy đơn hàng nào phù hợp'
-              : 'Bạn chưa có đơn hàng nào'}
+            {searchTerm ||
+            selectedStatus !== "all" ||
+            selectedOrderType !== "all"
+              ? "Không tìm thấy đơn hàng nào phù hợp"
+              : "Bạn chưa có đơn hàng nào"}
           </p>
         </div>
       ) : (
@@ -323,11 +346,15 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
                       <span className="font-semibold text-gray-800">
                         #{order.orderCode}
                       </span>
-                      <span className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
+                      <span
+                        className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}
+                      >
                         <StatusIcon size={14} />
                         {status.label}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${orderTypeInfo.bgColor} ${orderTypeInfo.color}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${orderTypeInfo.bgColor} ${orderTypeInfo.color}`}
+                      >
                         {orderTypeInfo.label}
                       </span>
                     </div>
@@ -345,7 +372,9 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
 
                 <div className="border-t pt-3 space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Phương thức thanh toán:</span>
+                    <span className="text-gray-600">
+                      Phương thức thanh toán:
+                    </span>
                     <span className="font-medium">{order.paymentMethod}</span>
                   </div>
                   {order.shippingFee === 0 ? (
@@ -359,7 +388,9 @@ export default function MyOrders({ onBack }: MyOrdersProps) {
                     order.shippingFee && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Phí vận chuyển:</span>
-                        <span className="font-medium">{formatCurrency(order.shippingFee)}</span>
+                        <span className="font-medium">
+                          {formatCurrency(order.shippingFee)}
+                        </span>
                       </div>
                     )
                   )}

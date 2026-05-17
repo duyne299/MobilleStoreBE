@@ -125,11 +125,7 @@ export default function BannerModal({
 
         const formDataToSend = new FormData();
 
-        // Chỉ gửi title khi thêm mới hoặc title bị đổi
-        if (!banner || titleTrimmed !== banner.title?.trim()) {
-            formDataToSend.append('title', titleTrimmed);
-        }
-
+        formDataToSend.append('title', titleToUse);
         formDataToSend.append('linkTarget', linkToUse);
         formDataToSend.append('startDate', startDateToUse);
         formDataToSend.append('endDate', endDateToUse);
