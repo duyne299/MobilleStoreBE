@@ -41,7 +41,7 @@ export const userService = {
         formData.append(key, value as any);
       }
     });
-    if (avatarFile) formData.append("avatar", avatarFile);
+    if (avatarFile) formData.append("avatarFile", avatarFile);
 
     const res = await axiosClient.post("/users", formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -62,7 +62,7 @@ export const userService = {
         formData.append(key, String(value));
       }
     }
-    if (avatarFile) formData.append("avatar", avatarFile);
+    if (avatarFile) formData.append("avatarFile", avatarFile);
 
     const res = await axiosClient.put(`/users/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
