@@ -97,12 +97,12 @@ export const postService = {
 
   // Xóa bài viết
   async remove(id: number): Promise<void> {
-    await axiosClient.delete(`/posts/${id}`);
+    await axiosClient.delete(`/api/posts/${id}`);
   },
 
   // Đổi trạng thái isActive
   async changeStatus(id: number, isActive: boolean): Promise<Post> {
-    const res = await axiosClient.patch<Post>(`/posts/${id}/status`, {
+    const res = await axiosClient.patch<Post>(`/api/posts/${id}/status`, {
       isActive,
     });
     return res.data;

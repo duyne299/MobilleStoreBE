@@ -99,7 +99,7 @@ export const orderService = {
   },
 
   getProductByOptionId: async (optionId: number) => {
-    const res = await axiosClient.get(`/product-variants/${optionId}/product`);
+    const res = await axiosClient.get(`/product-options/${optionId}/product`);
     return res.data;
   },
 };
