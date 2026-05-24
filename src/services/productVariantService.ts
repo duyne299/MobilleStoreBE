@@ -13,6 +13,8 @@ export interface ProductVariantProduct {
   soldQuantity: number;
   origin: string;
   warranty: string;
+  mainImage?: string;
+  images?: any[];
 }
 
 export interface ProductVariant {
