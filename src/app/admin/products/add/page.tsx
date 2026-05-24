@@ -249,10 +249,10 @@ export default function AddProductPage() {
         return;
       }
 
-      if (!v.quantity || quantity < 1) {
+      if (v.quantity === undefined || v.quantity === null || isNaN(quantity) || quantity < 0) {
         showToast(
           "error",
-          `Phiên bản ${i + 1}: Số lượng phải lớn hơn hoặc bằng 1`,
+          `Phiên bản ${i + 1}: Số lượng phải lớn hơn hoặc bằng 0`,
         );
         scrollToVariantSection();
         return;
@@ -755,7 +755,7 @@ export default function AddProductPage() {
                         </label>
                         <label className="flex flex-col">
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
-                            Số lượng
+                            Tồn kho
                           </p>
                           <input
                             type="number"

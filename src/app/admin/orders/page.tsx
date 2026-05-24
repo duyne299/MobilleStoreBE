@@ -127,6 +127,7 @@ export default function OrderManagement() {
       const dataToExport = orders2.map((order: any, idx: number) => ({
         STT: idx + 1,
         "Mã đơn hàng": order.orderCode || order.orderId,
+        "Mã giao dịch": order.transactionCode || "—",
         "Khách hàng": order.user?.fullName || "—",
         "Tổng tiền": new Intl.NumberFormat("vi-VN", {
           style: "currency",
@@ -401,6 +402,9 @@ export default function OrderManagement() {
                       Mã đơn hàng
                     </th>
                     <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">
+                      Mã giao dịch
+                    </th>
+                    <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">
                       Khách hàng
                     </th>
                     <th className="px-4 py-4 text-left text-sm font-semibold text-gray-600">
@@ -438,6 +442,12 @@ export default function OrderManagement() {
                       <td className="px-4 py-4 min-w-[120px]">
                         <span className="text-sm font-medium text-blue-600">
                           {order.orderCode || `#${order.orderId}`}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-4 min-w-[120px]">
+                        <span className="text-sm font-medium text-gray-600 font-mono">
+                          {order.transactionCode || "—"}
                         </span>
                       </td>
 

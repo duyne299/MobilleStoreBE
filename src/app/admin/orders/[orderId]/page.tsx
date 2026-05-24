@@ -529,6 +529,15 @@ export default function OrderDetailPage() {
                                     </span>
                                 </div>
 
+                                {order.transactionCode && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Mã giao dịch:</span>
+                                        <span className="font-semibold text-gray-900 font-mono">
+                                            {order.transactionCode}
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Trạng thái thanh toán:</span>
                                     <span className="font-medium text-gray-900">

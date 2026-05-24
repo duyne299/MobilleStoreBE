@@ -1,7 +1,7 @@
     'use client';
-    import React, { useState, useEffect } from 'react';
+    import React, { useEffect } from 'react';
     import { motion, AnimatePresence } from 'framer-motion';
-    import { X, Loader2 } from 'lucide-react';
+    import { X } from 'lucide-react';
 
     interface QRCodeModalProps {
         isOpen: boolean;
@@ -20,7 +20,6 @@
         onClose,
         onPaymentSuccess 
     }: QRCodeModalProps) {
-        const [timeLeft, setTimeLeft] = useState(600);
 
         // Ngăn scroll khi modal mở
         useEffect(() => {
@@ -34,29 +33,6 @@
                 document.body.style.overflow = 'unset';
             };
         }, [isOpen]);
-
-        useEffect(() => {
-            if (!isOpen) return;
-
-            const timer = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            console.log(qrCodeURL)
-
-            return () => clearInterval(timer);
-        }, [isOpen]);
-
-        const formatTime = (seconds: number) => {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        };
 
         const formatPrice = (price: number) => {
             return price.toLocaleString('vi-VN') + 'đ';
@@ -91,13 +67,6 @@
 
                         {/* Content */}
                         <div className="p-6">
-                            {/* Timer */}
-                            <div className="flex items-center justify-center mb-4">
-                                <div className="bg-red-50 text-red-600 px-4 py-2 rounded-full font-mono font-bold text-lg">
-                                    {formatTime(timeLeft)}
-                                </div>
-                            </div>
-
                             {/* QR Code */}
                             <div className="flex justify-center mb-6">
                                 <div className="bg-white p-4 rounded-2xl shadow-lg border-4 border-blue-100">
@@ -123,11 +92,13 @@
                                 </div>
                             </div>
 
-                            {/* Loading Indicator */}
-                            <div className="flex items-center justify-center gap-2 text-blue-600 mb-4">
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <span className="text-sm font-medium">Đang chờ thanh toán...</span>
-                            </div>
+                            {/* Confirm Payment Button */}
+                            <button
+                                onClick={onPaymentSuccess}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mb-4 transition-colors shadow-md flex items-center justify-center"
+                            >
+                                Xác nhận thanh toán
+                            </button>
 
                             {/* Instructions */}
                             <div className="bg-blue-50 rounded-lg p-4">
@@ -138,14 +109,15 @@
                                     <li>Quét mã QR hiển thị trên màn hình</li>
                                     <li>Kiểm tra số tiền và nội dung chuyển khoản</li>
                                     <li>Xác nhận và hoàn tất thanh toán</li>
+                                    <li>Quay lại màn hình này và nhấn nút <strong>Xác nhận thanh toán</strong></li>
                                 </ol>
                             </div>
 
                             {/* Warning */}
                             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                                 <p className="text-xs text-yellow-800">
-                                    ⚠️ Vui lòng không tắt cửa sổ này cho đến khi thanh toán thành công. 
-                                    Nếu đóng cửa sổ, đơn hàng sẽ không được xử lý.
+                                    ⚠️ Vui lòng hoàn tất chuyển khoản trước khi nhấn &apos;Xác nhận thanh toán&apos;. 
+                                    Nếu đóng cửa sổ hoặc chưa thanh toán, đơn hàng sẽ không được xử lý.
                                 </p>
                             </div>
                         </div>

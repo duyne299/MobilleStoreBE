@@ -21,6 +21,7 @@ function PaymentResultContent() {
             const responseCode = searchParams.get("vnp_ResponseCode");
             const txnRef = searchParams.get("vnp_TxnRef");
             const amountParam = searchParams.get("vnp_Amount");
+            const transactionNo = searchParams.get("vnp_TransactionNo");
 
             if (!txnRef) {
                 setStatus("error");
@@ -39,7 +40,8 @@ function PaymentResultContent() {
                 try {
                     // Update status to PAID on backend
                     await orderService.updateStatus(parsedOrderId, {
-                        status: "PAID"
+                        status: "PAID",
+                        transactionCode: transactionNo
                     });
                     
                     // Clear cart in session storage

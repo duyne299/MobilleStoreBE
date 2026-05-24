@@ -65,6 +65,7 @@ export default function CheckoutPage() {
     qrCodeURL: string;
     transactionCode: string;
   } | null>(null);
+  const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
 
   // Discount states
   const [discountCode, setDiscountCode] = useState("");
@@ -87,10 +88,9 @@ export default function CheckoutPage() {
 
   // Hooks
   const { stores, loading: storesLoading } = useStores(9999);
-  const { createOrder, createOrderDetail } = useOrders();
+  const { createOrder, createOrderDetail, updateOrderStatus } = useOrders();
   const { removeItem, items: cartItems } = useCart();
-  const { createVietQRPayment, createVNPayPayment, startVietQRPolling } =
-    usePayment();
+  const { createVietQRPayment, createVNPayPayment } = usePayment();
   const [toast, setToast] = useState<{
     type: "success" | "error";
     message: string;
@@ -262,6 +262,16 @@ export default function CheckoutPage() {
   // Xử lý QR payment success
   const handleQRPaymentSuccess = async () => {
     setShowQRModal(false);
+    if (createdOrderId && qrCodeData?.transactionCode) {
+      try {
+        await updateOrderStatus(createdOrderId, {
+          transactionCode: qrCodeData.transactionCode,
+          status: "CONFIRMED",
+        });
+      } catch (err) {
+        console.error("Lỗi khi lưu mã giao dịch:", err);
+      }
+    }
     await completeOrder();
   };
 
@@ -326,13 +336,14 @@ export default function CheckoutPage() {
     try {
       // 1. Tạo order
       const createdOrder = await createOrderAndDetails();
+      setCreatedOrderId(createdOrder.orderId);
 
       // 2. Xử lý theo phương thức thanh toán
       if (paymentMethod === "cod") {
         // COD: Hoàn tất ngay
         await completeOrder();
       } else if (paymentMethod === "qr") {
-        // VietQR: Hiển thị QR và bật polling
+        // VietQR: Hiển thị QR
         const qrPayment = await createVietQRPayment({
           orderId: createdOrder.orderId,
           amount: calculateFinalAmount(),
@@ -348,18 +359,6 @@ export default function CheckoutPage() {
           transactionCode: qrPayment.transactionCode,
         });
         setShowQRModal(true);
-
-        // Bắt đầu polling
-        const stopPolling = startVietQRPolling(
-          createdOrder.orderId,
-          () => {
-            handleQRPaymentSuccess();
-          },
-          3000,
-          200,
-        );
-
-        return () => stopPolling();
       } else if (paymentMethod === "atm") {
         // VNPay: Redirect đến trang thanh toán
         const vnpayPayment = await createVNPayPayment({

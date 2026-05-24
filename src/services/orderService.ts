@@ -14,6 +14,7 @@ export interface Order {
   note?: string | null;
   customerAddress: string;
   orderType: "PICKUP" | "DELIVERY";
+  transactionCode?: string | null;
   createdAt: string;
   updateAt?: string | null;
   shipping?: any;
