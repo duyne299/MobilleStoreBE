@@ -45,6 +45,7 @@ export default function ProductPage({
   const [currentPrice, setCurrentPrice] = useState(0);
   const [originalPrice, setOriginalPrice] = useState(0);
   const [stockQuantity, setStockQuantity] = useState(0);
+  const [soldQuantity, setSoldQuantity] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
   const [variantsWithPrices, setVariantsWithPrices] = useState<any[]>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -159,6 +160,7 @@ export default function ProductPage({
       setCurrentPrice(0);
       setOriginalPrice(0);
       setStockQuantity(0);
+      setSoldQuantity(0);
       return;
     }
 
@@ -168,13 +170,16 @@ export default function ProductPage({
     if (selectedOption) {
       const price = (selectedOption as any).baseSalePrice || 0;
       const quantity = (selectedOption as any).quantity || 0;
+      const sold = (selectedOption as any).soldQuantity || 0;
       setCurrentPrice(price);
       setOriginalPrice(price);
       setStockQuantity(quantity);
+      setSoldQuantity(sold);
     } else {
       setCurrentPrice(0);
       setOriginalPrice(0);
       setStockQuantity(0);
+      setSoldQuantity(0);
     }
   }, [selectedOptionId, variants]);
 
@@ -631,7 +636,7 @@ export default function ProductPage({
                     <span className="text-gray-700">
                       Đã bán:{" "}
                       <span className="font-semibold text-green-600">
-                        {formatNumber(product.soldQuantity || 0)}
+                        {formatNumber(selectedOptionId ? soldQuantity : (product.soldQuantity || 0))}
                       </span>
                     </span>
                   </div>
@@ -640,7 +645,7 @@ export default function ProductPage({
                     <span className="text-gray-700">
                       Còn:{" "}
                       <span className="font-semibold text-blue-600">
-                        {formatNumber(product.totalQuantity || 0)}
+                        {formatNumber(selectedOptionId ? stockQuantity : (product.totalQuantity || 0))}
                       </span>
                     </span>
                   </div>
