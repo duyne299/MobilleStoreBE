@@ -59,7 +59,7 @@ export default function EditProductPage() {
   } = useBrands(100000);
   const { stores, loading: loadingStore } = useStores(100000);
   const { getProductBySlug, updateProduct } = useProducts();
-  const { updateSpec } = useProductSpecs();
+  const { updateSpec, createSpec } = useProductSpecs();
   const {
     variants: variantsHook,
     fetchByProductId,
@@ -182,6 +182,7 @@ export default function EditProductPage() {
           const loadedVariants = data.variants.map((option: any) => ({
             optionId: option.optionId,
             color: option.color || "",
+            colorCode: option.colorCode || "#000000",
             rom: option.rom || "",
             extraPrice: option.extraPrice || 0,
             isActive: option.isActive !== undefined ? option.isActive : true,
@@ -197,6 +198,7 @@ export default function EditProductPage() {
             {
               optionId: null,
               color: "Standard",
+              colorCode: "#000000",
               rom: "Standard",
               extraPrice: 0,
               isActive: true,
@@ -261,6 +263,7 @@ export default function EditProductPage() {
       ...prev,
       {
         color: "Standard",
+        colorCode: "#000000",
         rom: "Standard",
         extraPrice: 0,
         isActive: true,
@@ -345,6 +348,12 @@ export default function EditProductPage() {
       if (spec.specId) {
         const { specId, ...specData } = spec;
         await updateSpec(Number(specId), specData);
+      } else {
+        const { specId, ...specData } = spec;
+        const hasSpecData = Object.values(specData).some((val) => val !== "");
+        if (hasSpecData) {
+          await createSpec({ proId: product.proId, ...specData });
+        }
       }
 
       // Update variants (including inventory data)
@@ -353,6 +362,7 @@ export default function EditProductPage() {
 
         const variantData = {
           color: v.color,
+          colorCode: v.colorCode || "#000000",
           rom: v.rom,
           extraPrice: Number(v.extraPrice),
           isActive: v.isActive,
@@ -704,6 +714,208 @@ export default function EditProductPage() {
             </motion.div>
           </motion.div>
 
+          {/* Thông số kỹ thuật */}
+          <motion.div
+            className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-lg shadow-gray-200/50 dark:shadow-none overflow-hidden"
+            variants={itemVariants}
+          >
+            <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+              <p className="text-gray-900 dark:text-white text-lg font-semibold">
+                Thông số kỹ thuật
+              </p>
+              <motion.button
+                type="button"
+                onClick={() => setIsSpecExpanded(!isSpecExpanded)}
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <motion.svg
+                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  animate={{ rotate: isSpecExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </motion.svg>
+              </motion.button>
+            </div>
+
+            <motion.div
+              className="overflow-hidden"
+              initial={false}
+              animate={{ height: isSpecExpanded ? "auto" : 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Bộ vi xử lý (CPU)
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: Apple A17 Pro"
+                      value={spec.cpu}
+                      onChange={(e) => handleSpecChange("cpu", e.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Bộ nhớ RAM
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 8GB"
+                      value={spec.ram}
+                      onChange={(e) => handleSpecChange("ram", e.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Bộ nhớ trong (ROM)
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 256GB"
+                      value={spec.rom}
+                      onChange={(e) => handleSpecChange("rom", e.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Hệ điều hành (OS)
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: iOS 17"
+                      value={spec.os}
+                      onChange={(e) => handleSpecChange("os", e.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Màn hình
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 6.7 inches, OLED"
+                      value={spec.display}
+                      onChange={(e) =>
+                        handleSpecChange("display", e.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Đồ họa (GPU)
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: Apple GPU 6 nhân"
+                      value={spec.gpu}
+                      onChange={(e) => handleSpecChange("gpu", e.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Camera trước
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 12MP"
+                      value={spec.cameraFront}
+                      onChange={(e) =>
+                        handleSpecChange("cameraFront", e.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Camera sau
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 48MP + 12MP + 12MP"
+                      value={spec.cameraRear}
+                      onChange={(e) =>
+                        handleSpecChange("cameraRear", e.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Dung lượng pin
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 4441 mAh"
+                      value={spec.battery}
+                      onChange={(e) =>
+                        handleSpecChange("battery", e.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Trọng lượng
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 221g"
+                      value={spec.weight}
+                      onChange={(e) =>
+                        handleSpecChange("weight", e.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Kích thước
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 159.9 x 76.7 x 8.3 mm"
+                      value={spec.size}
+                      onChange={(e) => handleSpecChange("size", e.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Thẻ SIM
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: 2 SIM (nano‑SIM và eSIM)"
+                      value={spec.sim}
+                      onChange={(e) => handleSpecChange("sim", e.target.value)}
+                    />
+                  </label>
+                  <label className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
+                      Chất liệu
+                    </p>
+                    <input
+                      className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-sm transition-all"
+                      placeholder="Ví dụ: Khung Titan, mặt lưng kính"
+                      value={spec.material}
+                      onChange={(e) =>
+                        handleSpecChange("material", e.target.value)
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+
           {/* Phiên bản, Giá & Tồn kho */}
           <motion.div
             className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm shadow-lg shadow-gray-200/50 dark:shadow-none overflow-hidden"
@@ -711,9 +923,10 @@ export default function EditProductPage() {
           >
             <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
               <p className="text-gray-900 dark:text-white text-lg font-semibold">
-                Giá & Tồn kho
+                Danh sách các phiên bản (Màu sắc, Dung lượng & Tồn kho)
               </p>
               <motion.button
+                type="button"
                 onClick={() => setIsVariantExpanded(!isVariantExpanded)}
                 className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 whileHover={{ scale: 1.05 }}
@@ -744,111 +957,281 @@ export default function EditProductPage() {
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
               <div className="p-6">
+                {/* 2. Bảng Biến thể rút gọn */}
                 <div className="space-y-4">
-                  {variants.map((variant, index) => (
-                    <motion.div
-                      key={index}
-                      className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-800/50 dark:to-blue-900/10 p-5"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Danh sách biến thể hiện tại ({variants.length})
+                    </h4>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 text-sm">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">
+                            #
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-72">
+                            Màu sắc & Mã màu
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-36">
+                            Dung lượng (ROM)
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48">
+                            Kho hàng
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">
+                            Giá nhập ($)
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">
+                            Giá bán ($)
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">
+                            Giá chênh ($)
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">
+                            Tồn kho
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">
+                            Trạng thái
+                          </th>
+                          <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">
+                            Xóa
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                        {variants.map((variant, index) => (
+                          <tr
+                            key={index}
+                            className="hover:bg-gray-50/55 dark:hover:bg-gray-800/40"
+                          >
+                            <td className="px-3 py-2 text-gray-500 font-medium text-xs text-center">
+                              {index + 1}
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={variant.color}
+                                  onChange={(e) =>
+                                    updateVariantField(
+                                      index,
+                                      "color",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-28 rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                                  placeholder="Tên màu sắc"
+                                />
+                                <input
+                                  type="color"
+                                  value={variant.colorCode || "#000000"}
+                                  onChange={(e) =>
+                                    updateVariantField(
+                                      index,
+                                      "colorCode",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-700 cursor-pointer p-0 bg-transparent overflow-hidden"
+                                />
+                                <input
+                                  type="text"
+                                  value={variant.colorCode || "#000000"}
+                                  onChange={(e) =>
+                                    updateVariantField(
+                                      index,
+                                      "colorCode",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-20 rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                                  placeholder="#000000"
+                                />
+                              </div>
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <input
+                                type="text"
+                                value={variant.rom}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    index,
+                                    "rom",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                                placeholder="Dung lượng"
+                              />
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <select
+                                value={variant.storeId || ""}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    index,
+                                    "storeId",
+                                    Number(e.target.value),
+                                  )
+                                }
+                                disabled={loadingStore}
+                                className="w-full rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                              >
+                                <option value="">Chọn cửa hàng</option>
+                                {!loadingStore &&
+                                  stores?.length > 0 &&
+                                  stores.map((store) => (
+                                    <option
+                                      key={store.storeId}
+                                      value={store.storeId}
+                                    >
+                                      {store.storeName}
+                                    </option>
+                                  ))}
+                              </select>
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                value={variant.importPrice}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    index,
+                                    "importPrice",
+                                    Number(e.target.value),
+                                  )
+                                }
+                                className="w-full rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                                placeholder="0"
+                              />
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                value={variant.salePrice}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    index,
+                                    "salePrice",
+                                    Number(e.target.value),
+                                  )
+                                }
+                                className="w-full rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                                placeholder="0"
+                              />
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                value={variant.extraPrice}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    index,
+                                    "extraPrice",
+                                    Number(e.target.value),
+                                  )
+                                }
+                                className="w-full rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                                placeholder="0"
+                              />
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                value={variant.quantity}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    index,
+                                    "quantity",
+                                    Number(e.target.value),
+                                  )
+                                }
+                                className="w-full rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                                placeholder="0"
+                              />
+                            </td>
+
+                            <td className="px-2 py-1.5">
+                              <select
+                                value={variant.isActive ? "true" : "false"}
+                                onChange={(e) =>
+                                  updateVariantField(
+                                    index,
+                                    "isActive",
+                                    e.target.value === "true",
+                                  )
+                                }
+                                className="w-full rounded-lg text-xs text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-8 px-2 focus:ring-1 focus:ring-blue-500"
+                              >
+                                <option value="true">Kích hoạt</option>
+                                <option value="false">Tạm ẩn</option>
+                              </select>
+                            </td>
+
+                            <td className="px-2 py-1.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => removeVariant(index)}
+                                className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                title="Xóa"
+                              >
+                                <svg
+                                  className="w-4 h-4 mx-auto"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-start">
+                    <button
+                      type="button"
+                      onClick={addVariant}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-semibold transition-all border border-gray-300"
                     >
-                      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <label className="flex flex-col">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
-                              Kho hàng
-                            </p>
-                            <select
-                              value={variant.storeId || ""}
-                              onChange={(e) =>
-                                updateVariantField(
-                                  index,
-                                  "storeId",
-                                  Number(e.target.value),
-                                )
-                              }
-                              disabled={loadingStore}
-                              className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-11 px-4 text-sm transition-all"
-                            >
-                              <option value="">
-                                {loadingStore
-                                  ? "Đang tải cửa hàng..."
-                                  : stores.length === 0
-                                    ? "Chưa có cửa hàng"
-                                    : "Chọn cửa hàng"}
-                              </option>
-                              {!loadingStore &&
-                                stores?.length > 0 &&
-                                stores.map((store) => (
-                                  <option
-                                    key={store.storeId}
-                                    value={store.storeId}
-                                  >
-                                    {store.storeName}
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
-                          <label className="flex flex-col">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
-                              Giá nhập ($)
-                            </p>
-                            <input
-                              type="number"
-                              value={variant.importPrice}
-                              onChange={(e) =>
-                                updateVariantField(
-                                  index,
-                                  "importPrice",
-                                  Number(e.target.value),
-                                )
-                              }
-                              className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-11 px-4 text-sm transition-all"
-                              placeholder="Ví dụ: 950"
-                            />
-                          </label>
-                          <label className="flex flex-col">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
-                              Giá bán gốc ($)
-                            </p>
-                            <input
-                              type="number"
-                              value={variant.salePrice}
-                              onChange={(e) =>
-                                updateVariantField(
-                                  index,
-                                  "salePrice",
-                                  Number(e.target.value),
-                                )
-                              }
-                              className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-11 px-4 text-sm transition-all"
-                              placeholder="Ví dụ: 1299"
-                            />
-                          </label>
-                          <label className="flex flex-col">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pb-2">
-                              Tồn kho
-                            </p>
-                            <input
-                              type="number"
-                              value={variant.quantity}
-                              onChange={(e) =>
-                                updateVariantField(
-                                  index,
-                                  "quantity",
-                                  Number(e.target.value),
-                                )
-                              }
-                              className="w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 h-11 px-4 text-sm transition-all"
-                              placeholder="Ví dụ: 150"
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Thêm phiên bản thủ công
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

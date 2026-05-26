@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, ChevronDown, X } from "lucide-react";
 import ProductCard from "@/components/products/ProductCard";
@@ -15,7 +15,7 @@ import ProductSlider from "@/components/banners/ProductSlide";
 import { useSearchParams } from "next/navigation";
 import { ScrollToTopButton } from "@/components/ui/ScrollToTopButton";
 
-export default function ProductPage() {
+function ProductPageContent() {
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category");
   const searchFromUrl = searchParams.get("search"); // Lấy search query từ URL
@@ -553,5 +553,17 @@ export default function ProductPage() {
       <Footer />
       <ScrollToTopButton />
     </>
+  );
+}
+
+export default function ProductPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F3F4F6] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    }>
+      <ProductPageContent />
+    </Suspense>
   );
 }
