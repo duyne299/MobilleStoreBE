@@ -70,7 +70,7 @@ export default function ProductManagement() {
     } catch (err: any) {
       showToast(
         "error",
-        err.message || `Xóa sản phẩm "${confirmDelete.proName}" thất bại!`,
+        err.response?.data?.message || err.message || `Xóa sản phẩm "${confirmDelete.proName}" thất bại!`,
       );
     } finally {
       setConfirmDelete({ show: false });
