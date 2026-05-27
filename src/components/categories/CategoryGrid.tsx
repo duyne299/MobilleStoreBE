@@ -4,7 +4,7 @@ import { useCategories } from "@/hooks/useCategory";
 import { useRouter } from "next/navigation";
 
 export default function CategoryGrid() {
-  const { categories, loading } = useCategories(10);
+  const { categories, loading } = useCategories(10, true);
   const router = useRouter();
 
   const containerVariants = {

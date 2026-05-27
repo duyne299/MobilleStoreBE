@@ -16,6 +16,7 @@ interface FindAllParams {
   page?: number;
   limit?: number;
   search?: string;
+  active?: boolean;
 }
 
 export const categoryService = {

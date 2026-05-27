@@ -5,9 +5,10 @@ interface FetchParams {
   page?: number;
   limit?: number;
   search?: string;
+  active?: boolean;
 }
 
-export function useCategories(initialLimit = 10) {
+export function useCategories(initialLimit = 10, initialActive?: boolean) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,11 +22,17 @@ export function useCategories(initialLimit = 10) {
       page = 1,
       limit = initialLimit,
       search = "",
+      active = initialActive,
     }: FetchParams = {}) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await categoryService.getAll({ page, limit, search });
+        const res = await categoryService.getAll({
+          page,
+          limit,
+          search,
+          active,
+        });
         setCategories(res.data);
         setTotal(res.total);
         setCurrentPage(page);
@@ -35,7 +42,7 @@ export function useCategories(initialLimit = 10) {
         setLoading(false);
       }
     },
-    [initialLimit]
+    [initialLimit, initialActive],
   );
 
   // --- Search category ---
@@ -44,7 +51,7 @@ export function useCategories(initialLimit = 10) {
       setSearch(keyword);
       fetchCategories({ page: 1, limit: initialLimit, search: keyword });
     },
-    [fetchCategories, initialLimit]
+    [fetchCategories, initialLimit],
   );
 
   // --- Chuyển page ---
@@ -52,25 +59,28 @@ export function useCategories(initialLimit = 10) {
     (page: number) => {
       fetchCategories({ page, limit: initialLimit, search });
     },
-    [fetchCategories, initialLimit, search]
+    [fetchCategories, initialLimit, search],
   );
 
   // --- Tạo category ---
-  const createCategory = useCallback(async (data: Partial<Category>, image?: File) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await categoryService.create(data, image);
-      setCategories((prev) => [res, ...prev]);
-      setTotal((prev) => prev + 1);
-      return res;
-    } catch (err: any) {
-      setError(err.message || "Lỗi tạo danh mục");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const createCategory = useCallback(
+    async (data: Partial<Category>, image?: File) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await categoryService.create(data, image);
+        setCategories((prev) => [res, ...prev]);
+        setTotal((prev) => prev + 1);
+        return res;
+      } catch (err: any) {
+        setError(err.message || "Lỗi tạo danh mục");
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   // --- Cập nhật category ---
   const updateCategory = useCallback(
@@ -88,7 +98,7 @@ export function useCategories(initialLimit = 10) {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   // --- Cập nhật trạng thái isActive ---
@@ -107,7 +117,7 @@ export function useCategories(initialLimit = 10) {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   // --- Xóa category ---

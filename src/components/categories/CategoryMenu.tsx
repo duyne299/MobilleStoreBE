@@ -86,7 +86,7 @@ export default function CategoryMenu({
     categories,
     loading: loadingCategories,
     fetchCategories,
-  } = useCategories(100);
+  } = useCategories(100, true);
   const {
     products,
     loading: loadingProducts,
