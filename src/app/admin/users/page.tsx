@@ -90,7 +90,7 @@ export default function UserManagement() {
         const roleStyles: Record<string, string> = {
             admin: "bg-purple-100 text-purple-700",
             user: "bg-blue-100 text-blue-700",
-            moderator: "bg-orange-100 text-orange-700",
+            staff: "bg-orange-100 text-orange-700",
         };
         return roleStyles[role.toLowerCase()] || "bg-gray-100 text-gray-700";
     };
