@@ -320,9 +320,9 @@ export default function ProductManagement() {
                             onClick={() =>
                               handleDeleteClick(product.proId, product.proName)
                             }
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="text-sm text-red-600 hover:text-red-700 underline font-medium transition-colors ml-1"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            Xóa
                           </motion.button>
                         </div>
                       </td>

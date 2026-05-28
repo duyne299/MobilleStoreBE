@@ -100,6 +100,22 @@ export default function OrderManagement() {
 
   const handleCancelDelete = () => setConfirmDelete({ show: false });
 
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete.orderId) return;
+    try {
+      await deleteOrder(confirmDelete.orderId);
+      showToast("success", `Xóa đơn hàng thành công!`);
+      await handleApplyFilters();
+    } catch (err: any) {
+      showToast(
+        "error",
+        err.response?.data?.message || err.message || `Xóa đơn hàng thất bại!`,
+      );
+    } finally {
+      setConfirmDelete({ show: false });
+    }
+  };
+
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 2000);
@@ -520,7 +536,7 @@ export default function OrderManagement() {
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                           <Link href={`/admin/orders/${order.orderId}`}>
                             <motion.button
                               whileHover={{ scale: 1.1 }}
@@ -531,6 +547,20 @@ export default function OrderManagement() {
                               <Edit2 className="w-4 h-4" />
                             </motion.button>
                           </Link>
+                          <button
+                            onClick={() =>
+                              setConfirmDelete({
+                                show: true,
+                                orderId: order.orderId,
+                                orderCode:
+                                  order.orderCode || `#${order.orderId}`,
+                              })
+                            }
+                            className="text-sm text-red-600 hover:text-red-700 underline font-medium transition-colors ml-2"
+                            title="Xóa đơn hàng"
+                          >
+                            Xóa
+                          </button>
                         </div>
                       </td>
                     </motion.tr>
@@ -594,6 +624,12 @@ export default function OrderManagement() {
           </div>
         )}
       </div>
+      <ConfirmToast
+        show={confirmDelete.show}
+        message={`Bạn có chắc chắn muốn xóa đơn hàng "${confirmDelete.orderCode}"?`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
       <Toast toast={toast} />
     </div>
   );

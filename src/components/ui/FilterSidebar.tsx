@@ -43,10 +43,18 @@ export default function FilterSidebar({
         ]);
 
         if (catRes?.data) {
-          setCategories(catRes.data.map((c: any) => c.categoryName));
+          setCategories(
+            catRes.data
+              .filter((c: any) => c.isActive !== false)
+              .map((c: any) => c.categoryName)
+          );
         }
         if (brandRes?.data) {
-          setBrands(brandRes.data.map((b: any) => b.brandName));
+          setBrands(
+            brandRes.data
+              .filter((b: any) => b.isActive !== false)
+              .map((b: any) => b.brandName)
+          );
         }
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu lọc:", error);

@@ -278,6 +278,20 @@ export function useOrders(initialLimit = 10) {
     }
   }, []);
 
+  const deleteOrderDetail = useCallback(async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await orderService.deleteOrderDetail(id);
+      return res;
+    } catch (err: any) {
+      setError(err.message || "Lỗi xóa chi tiết đơn hàng");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOrders({ page: 1, limit: initialLimit });
   }, [fetchOrders, initialLimit]);
@@ -313,5 +327,6 @@ export function useOrders(initialLimit = 10) {
     getAllOrderDetails,
     getOrderDetailsByOrder,
     getProductByOptionId,
+    deleteOrderDetail,
   };
 }

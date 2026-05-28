@@ -84,6 +84,11 @@ export const orderService = {
     return res.data;
   },
 
+  deleteOrderDetail: async (id: number) => {
+    const res = await axiosClient.delete(`/order-detail/${id}`);
+    return res.data;
+  },
+
   findAllOrderDetails: async () => {
     const res = await axiosClient.get("/order-detail");
     return res.data;
@@ -91,7 +96,7 @@ export const orderService = {
 
   findOrderDetailsByOrder: async (
     orderId: number,
-    params: FindAllParams = {}
+    params: FindAllParams = {},
   ) => {
     const res = await axiosClient.get(`/order-detail/order/${orderId}`, {
       params,

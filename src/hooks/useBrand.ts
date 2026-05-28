@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { brandService, Brand } from "../services/brandService";
+import { uploadService } from "../services/uploadService";
 
 interface FetchParams {
   page?: number;
@@ -61,11 +62,20 @@ export function useBrands(initialLimit = 10) {
     setError(null);
     try {
       const formData = new FormData();
-      formData.append("brandName", data.brandName);
-      formData.append("slug", data.slug);
-      if (file) formData.append("brandLogo", file);
-      if (typeof data.isActive === "boolean")
-        formData.append("isActive", String(data.isActive));
+      const brandData = {
+        brandName: data.brandName,
+        slug: data.slug || undefined,
+        isActive: data.isActive,
+      };
+
+      formData.append(
+        "data",
+        new Blob([JSON.stringify(brandData)], { type: "application/json" })
+      );
+
+      if (file) {
+        formData.append("logo", file);
+      }
 
       const res = await brandService.create(formData);
       setBrands((prev) => [res, ...prev]);
@@ -85,16 +95,15 @@ export function useBrands(initialLimit = 10) {
       setLoading(true);
       setError(null);
       try {
-        const formData = new FormData();
-        if (data.brandName) formData.append("brandName", data.brandName);
-        if (data.slug) formData.append("slug", data.slug);
-        if (typeof data.isActive === "boolean")
-          formData.append("isActive", String(data.isActive));
-        if (file) formData.append("brandLogo", file);
+        let updatedData = { ...data };
+        if (file) {
+          const uploadedUrl = await uploadService.uploadFile(file);
+          updatedData.brandLogo = uploadedUrl;
+        }
 
         const res =
           typeof idOrSlug === "number"
-            ? await brandService.update(idOrSlug, data)
+            ? await brandService.update(idOrSlug, updatedData)
             : await brandService.updateStatus(idOrSlug, data.isActive);
 
         // Cập nhật trong danh sách
