@@ -547,7 +547,9 @@ export default function OrderManagement() {
                               <Edit2 className="w-4 h-4" />
                             </motion.button>
                           </Link>
-                          <button
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={() =>
                               setConfirmDelete({
                                 show: true,
@@ -556,11 +558,11 @@ export default function OrderManagement() {
                                   order.orderCode || `#${order.orderId}`,
                               })
                             }
-                            className="text-sm text-red-600 hover:text-red-700 underline font-medium transition-colors ml-2"
+                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Xóa đơn hàng"
                           >
-                            Xóa
-                          </button>
+                            <Trash2 className="w-4 h-4" />
+                          </motion.button>
                         </div>
                       </td>
                     </motion.tr>
