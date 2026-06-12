@@ -39,6 +39,8 @@ export default function Header() {
     message: string;
   } | null>(null);
 
+  const isAdmin = userRole?.toLowerCase() === "admin";
+
   // Search suggestions states
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
@@ -70,7 +72,9 @@ export default function Header() {
         const userData = JSON.parse(userDataString);
         setUserAvatar(userData.avatar || null);
         setUserName(userData.fullName || null);
-        setUserRole(userData.role || null);
+        setUserRole(
+          userData.role ? userData.role.toString().toLowerCase() : null,
+        );
         setIsLoggedIn(true);
       }
     } catch (error) {
@@ -496,9 +500,7 @@ export default function Header() {
                             {userName || "Người dùng"}
                           </p>
                           <p className="text-sm text-red-100">
-                            {userRole === "admin"
-                              ? "Quản trị viên"
-                              : "Khách hàng"}
+                            {isAdmin ? "Quản trị viên" : "Khách hàng"}
                           </p>
                         </div>
                       </div>
@@ -527,7 +529,7 @@ export default function Header() {
                       })}
 
                       {/* Admin Menu Item */}
-                      {userRole === "admin" && (
+                      {isAdmin && (
                         <Link
                           href="/admin"
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700 border-t border-gray-100 cursor-pointer"
@@ -666,9 +668,7 @@ export default function Header() {
                               {userName || "Người dùng"}
                             </p>
                             <p className="text-xs text-red-100">
-                              {userRole === "admin"
-                                ? "Quản trị viên"
-                                : "Khách hàng"}
+                              {isAdmin ? "Quản trị viên" : "Khách hàng"}
                             </p>
                           </div>
                         </div>
@@ -693,7 +693,7 @@ export default function Header() {
                           );
                         })}
 
-                        {userRole === "admin" && (
+                        {isAdmin && (
                           <Link
                             href="/admin"
                             className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700 border-t border-gray-100 cursor-pointer"

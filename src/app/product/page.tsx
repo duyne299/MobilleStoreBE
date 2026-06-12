@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, ChevronDown, X } from "lucide-react";
@@ -263,7 +264,9 @@ function ProductPageContent() {
         <div className="border-b pl-10">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-600 overflow-x-auto">
-              <span>Trang chủ</span>
+              <Link href="/" className="text-blue-600 hover:underline">
+                Trang chủ
+              </Link>
               <span>/</span>
               <span className="text-black">Sản phẩm</span>
             </div>

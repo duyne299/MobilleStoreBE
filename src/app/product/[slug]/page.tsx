@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -508,7 +509,9 @@ export default function ProductPage({
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-600 overflow-x-auto">
-              <span>Trang chủ</span>
+              <Link href="/" className="text-blue-600 hover:underline">
+                Trang chủ
+              </Link>
               <span>/</span>
               <span>Điện thoại</span>
               <span>/</span>
