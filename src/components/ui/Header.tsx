@@ -302,7 +302,7 @@ export default function Header() {
             <div className="flex items-center gap-4 flex-1 max-w-4xl pl-16">
               {/* Category Button */}
               <div
-                className="relative flex-shrink-0 pb-8"
+                className="relative flex-shrink-0"
                 onMouseEnter={handleCategoryMouseEnter}
                 onMouseLeave={handleCategoryMouseLeave}
               >
@@ -431,7 +431,7 @@ export default function Header() {
             </div>
 
             {/* Right Group: User + Cart */}
-            <div className="flex items-center gap-3 flex-shrink-0 pb-8">
+            <div className="flex items-center gap-3 flex-shrink-0">
               {/* User Button with Avatar and Dropdown */}
               <div className="relative" ref={userMenuRef}>
                 {isLoggedIn ? (
