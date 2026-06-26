@@ -22,4 +22,18 @@ export const authService = {
   getCurrentUser() {
     return axiosClient.get("/api/auth/profile");
   },
+
+  // 🔹 Quên mật khẩu - Bước 1: Gửi OTP đến email
+  sendForgotPasswordOtp(email: string) {
+    return axiosClient.post("/api/auth/forgot-password", { email });
+  },
+
+  // 🔹 Quên mật khẩu - Bước 2: Xác minh OTP và đặt mật khẩu mới
+  verifyOtpAndResetPassword(data: {
+    email: string;
+    otp: string;
+    newPassword: string;
+  }) {
+    return axiosClient.post("/api/auth/reset-password", data);
+  },
 };

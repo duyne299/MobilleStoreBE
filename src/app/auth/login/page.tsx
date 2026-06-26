@@ -6,11 +6,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Toast from '@/components/ui/Toast';
+import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, loading, error } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -178,7 +180,11 @@ export default function LoginPage() {
 
               {/* Forgot password */}
               <div className="flex justify-end">
-                <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPasswordModal(true)}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium transition"
+                >
                   Quên mật khẩu?
                 </button>
               </div>
@@ -211,6 +217,10 @@ export default function LoginPage() {
         </div>
       </div>
       <Toast toast={toast} />
+      <ForgotPasswordModal
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
     </>
   );
 }
