@@ -75,16 +75,6 @@ export default function ProductListHome() {
     }).format(price);
   };
 
-  const calculateDiscount = (price: number, index: number) => {
-    const discounts = [5, 7, 8, 10, 11, 12];
-    const discountPercent = discounts[index % discounts.length];
-    return {
-      newPrice: Math.round(price * (1 - discountPercent / 100)),
-      discount: `-${discountPercent}%`,
-      savedAmount: Math.round((price * discountPercent) / 100),
-    };
-  };
-
   return (
     <div className="px-4 sm:px-12 md:px-16 lg:px-40 py-4">
       <div className="max-w-7xl mx-auto">
@@ -116,10 +106,6 @@ export default function ProductListHome() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {products.map((product, index) => {
             const basePrice = product.baseSalePrice ?? product.price ?? 0;
-            const { newPrice, discount, savedAmount } = calculateDiscount(
-              basePrice,
-              index,
-            );
             const hasStock =
               product.warehouseData &&
               product.warehouseData.some((w: any) => w.quantity > 0);
@@ -148,9 +134,9 @@ export default function ProductListHome() {
                   : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}${coverImage}`
                 : "https://placehold.co/400x400?text=No+Image",
               originalPrice: formatPrice(basePrice),
-              price: formatPrice(newPrice),
-              discount: discount,
-              savedAmount: formatPrice(savedAmount),
+              price: formatPrice(basePrice),
+              discount: "",
+              savedAmount: "",
               installment: true,
               rating: product.rating || 5,
               ratingCount: Math.floor(Math.random() * 500) + 50,

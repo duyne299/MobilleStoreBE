@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { useProducts } from "@/hooks/useProduct";
 import { productService } from "@/services/productService";
 
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(price);
+};
+
 const FlashSale = () => {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState({
@@ -125,16 +132,6 @@ const FlashSale = () => {
     }).format(price);
   };
 
-  // Tính giá khuyến mãi (giảm 15-25% ngẫu nhiên)
-  const calculateDiscount = (price: number, index: number) => {
-    const discounts = [22, 21, 15, 17, 24];
-    const discountPercent = discounts[index % discounts.length];
-    return {
-      newPrice: Math.round(price * (1 - discountPercent / 100)),
-      discount: `-${discountPercent}%`,
-    };
-  };
-
   if (loading && products.length === 0) {
     return (
       <div className="px-4 sm:px-12 md:px-16 lg:px-40 py-4">
@@ -191,14 +188,10 @@ const FlashSale = () => {
           <div className="p-4 md:p-6 bg-white">
             {/* Desktop Grid */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-4">
-              {products.map((product, index) => (
+              {products.map((product) => (
                 <ProductCard
                   key={product.proId}
                   product={product}
-                  index={index}
-                  formatPrice={formatPrice}
-                  calculateDiscount={calculateDiscount}
-                  router={router}
                 />
               ))}
             </div>
@@ -224,13 +217,7 @@ const FlashSale = () => {
                             key={product.proId}
                             className="w-1/2 flex-shrink-0"
                           >
-                            <ProductCard
-                              product={product}
-                              index={idx}
-                              formatPrice={formatPrice}
-                              calculateDiscount={calculateDiscount}
-                              router={router}
-                            />
+                            <ProductCard product={product} />
                           </div>
                         ))}
                     </div>
@@ -303,27 +290,9 @@ const FlashSale = () => {
   );
 };
 
-const ProductCard = ({
-  product,
-  index,
-  formatPrice,
-  calculateDiscount,
-  router,
-}: {
-  product: any;
-  index: number;
-  formatPrice: (price: number) => string;
-  calculateDiscount: (
-    price: number,
-    index: number,
-  ) => { newPrice: number; discount: string };
-  router: any;
-}) => {
-  // Sử dụng baseSalePrice từ warehouse thay vì price từ product
+const ProductCard = ({ product }: { product: any }) => {
+  const router = useRouter();
   const basePrice = product.baseSalePrice ?? product.price ?? 0;
-  const { newPrice, discount } = calculateDiscount(basePrice, index);
-
-  // Kiểm tra còn hàng
   const hasStock =
     product.warehouseData &&
     product.warehouseData.some((w: any) => w.quantity > 0);
@@ -338,7 +307,7 @@ const ProductCard = ({
     <motion.div
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ delay: 0 }}
       className="group bg-white rounded-xl overflow-hidden transition-all duration-300 hover:border relative"
     >
       {/* Out of stock overlay */}
@@ -393,26 +362,15 @@ const ProductCard = ({
           {/* Price Section */}
           <div className="relative flex flex-col mb-3 text-white">
             <div className="flex items-center justify-between p-2">
-              {/* Giá mới */}
               <div className="text-xl md:text-xl font-bold text-white">
-                {formatPrice(newPrice)}
+                {formatPrice(basePrice)}
               </div>
-
-              {/* Discount */}
-              <div className="text-red-700 px-1 py-0.5 rounded text-xl font-bold mt-2">
-                {discount}
-              </div>
-            </div>
-
-            {/* Giá cũ */}
-            <div className="text-xs text-gray-300 line-through -mt-2 ml-2">
-              {formatPrice(basePrice)}
             </div>
           </div>
         </div>
 
         {/* Name */}
-        <div className="text-xs md:text-sm font-medium text-gray-800 mb-3 line-clamp-2 min-h-[40px]">
+        <div className="text-sm md:text-base font-semibold text-gray-800 mb-3 line-clamp-2 min-h-[48px]">
           {product.proName}
         </div>
 

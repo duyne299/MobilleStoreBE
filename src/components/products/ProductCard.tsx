@@ -86,13 +86,17 @@ export default function ProductCard({ product }: { product: any }) {
         {/* Price Section */}
         <div className={`space-y-1 mb-2 ${hasValidSpecs ? 'mt-12' : ''}`}>
           <div className="flex items-center gap-2">
-            <span className="text-gray-400 line-through text-xs">
-              {product.originalPrice}
-            </span>
-            <span className="text-red-600 font-bold text-xs">
-              {product.discount}
-            </span>
-            
+            {product.discount && product.originalPrice !== product.price ? (
+              <>
+                <span className="text-gray-400 line-through text-xs">
+                  {product.originalPrice}
+                </span>
+                <span className="text-red-600 font-bold text-xs">
+                  {product.discount}
+                </span>
+              </>
+            ) : null}
+
             {/* Favorite Icon */}
             <motion.button
               onClick={(e) => {
@@ -115,13 +119,15 @@ export default function ProductCard({ product }: { product: any }) {
             {product.price}
           </div>
           
-          <div className="text-xs text-green-600 font-medium">
-            Giảm {product.savedAmount}
-          </div>
+          {product.discount && product.originalPrice !== product.price ? (
+            <div className="text-xs text-green-600 font-medium">
+              Giảm {product.savedAmount}
+            </div>
+          ) : null}
         </div>
 
         {/* Product Name - flex-grow để đẩy các phần tử phía dưới xuống đáy */}
-        <h3 className="text-xs text-gray-800 line-clamp-2 leading-snug mb-2 flex-grow">
+        <h3 className="text-sm sm:text-base text-gray-800 line-clamp-2 leading-tight mb-2 flex-grow font-semibold">
           {product.name}
         </h3>
 

@@ -149,17 +149,6 @@ function ProductPageContent() {
     setCurrentPage(1);
   }, [selectedBrands, priceRange, searchQuery]);
 
-  // Tính giá khuyến mãi
-  const calculateDiscount = (price: number, index: number) => {
-    const discounts = [5, 7, 8, 10, 11, 12, 6, 9, 8, 11];
-    const discountPercent = discounts[index % discounts.length];
-    return {
-      newPrice: Math.round(price * (1 - discountPercent / 100)),
-      discount: `-${discountPercent}%`,
-      savedAmount: Math.round((price * discountPercent) / 100),
-    };
-  };
-
   // Filter products - THÊM SEARCH FILTER
   const filteredProducts = products.filter((product) => {
     // Filter by search query
@@ -205,10 +194,6 @@ function ProductPageContent() {
   // Transform product for ProductCard
   const transformProduct = (product: any, index: number) => {
     const basePrice = product.baseSalePrice || 0;
-    const { newPrice, discount, savedAmount } = calculateDiscount(
-      basePrice,
-      index,
-    );
 
     // Tìm ảnh cover
     const coverImg =
@@ -228,9 +213,9 @@ function ProductPageContent() {
           : `${process.env.NEXT_PUBLIC_API_URL}${coverUrl}`
         : "https://placehold.co/400x400?text=No+Image",
       originalPrice: formatPrice(basePrice),
-      price: formatPrice(newPrice),
-      discount: discount,
-      savedAmount: formatPrice(savedAmount),
+      price: formatPrice(basePrice),
+      discount: "",
+      savedAmount: "",
       installment: true,
       rating: product.rating || 4.5,
       ratingCount: Math.floor(Math.random() * 1000) + 100,

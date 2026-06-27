@@ -12,10 +12,10 @@ interface SuggestedProductsProps {
 }
 
 // Main Suggested Products Component
-export default function SuggestedProducts({ 
-  categoryId, 
+export default function SuggestedProducts({
+  categoryId,
   excludeProductId,
-  title = "Sản phẩm tương tự" 
+  title = "Sản phẩm tương tự",
 }: SuggestedProductsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -96,17 +96,6 @@ export default function SuggestedProducts({
       style: 'currency',
       currency: 'VND'
     }).format(price);
-  };
-
-  // Tính giá khuyến mãi
-  const calculateDiscount = (price: number, index: number) => {
-    const discounts = [15, 15, 30, 20, 25, 25, 20, 30];
-    const discountPercent = discounts[index % discounts.length];
-    return {
-      newPrice: Math.round(price * (1 + discountPercent / 100)),
-      discount: `-${discountPercent}%`,
-      savedAmount: Math.round(price * discountPercent / 100)
-    };
   };
 
   const itemsPerView = isMobile ? 2 : 5;
@@ -204,7 +193,6 @@ export default function SuggestedProducts({
             >
               {products.map((product, index) => {
                 const basePrice = product.baseSalePrice ?? product.price ?? 0;
-                const { newPrice, discount, savedAmount } = calculateDiscount(basePrice, index);
                 const hasStock = product.hasStock;
 
                 const rawCover = product.images?.find((img: any) => img.isCover) || product.images?.[0] || product.mainImage;
@@ -218,15 +206,15 @@ export default function SuggestedProducts({
                       ? coverImage
                       : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${coverImage}`
                     : "https://placehold.co/400x400?text=No+Image",
-                  originalPrice: formatPrice(newPrice),
+                  originalPrice: formatPrice(basePrice),
                   price: formatPrice(basePrice),
                   slug: product.slug,
-                  discount: discount,
-                  savedAmount: formatPrice(savedAmount),
+                  discount: "",
+                  savedAmount: "",
                   rating: product.rating || 4.5,
                   ratingCount: Math.floor(Math.random() * 1000) + 100,
                   hasStock: hasStock,
-                  specs: product.specs || []
+                  specs: product.specs || [],
                 };
 
                 return (

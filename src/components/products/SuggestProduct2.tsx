@@ -100,17 +100,6 @@ export default function SuggestedAccessories() {
     }).format(price);
   };
 
-  // Tính giá khuyến mãi
-  const calculateDiscount = (price: number, index: number) => {
-    const discounts = [15, 15, 30, 20, 25, 25, 20, 30];
-    const discountPercent = discounts[index % discounts.length];
-    return {
-      newPrice: Math.round(price * (1 + discountPercent / 100)),
-      discount: `-${discountPercent}%`,
-      savedAmount: Math.round((price * discountPercent) / 100),
-    };
-  };
-
   const handleViewAll = () => {
     router.push("/product?category=Phụ kiện");
   };
@@ -212,10 +201,6 @@ export default function SuggestedAccessories() {
             >
               {accessories.map((product, index) => {
                 const basePrice = product.baseSalePrice ?? product.price ?? 0;
-                const { newPrice, discount, savedAmount } = calculateDiscount(
-                  basePrice,
-                  index,
-                );
                 const hasStock =
                   product.warehouseData &&
                   product.warehouseData.some((w: any) => w.quantity > 0);
@@ -241,22 +226,20 @@ export default function SuggestedAccessories() {
                       : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}${coverImage}`
                     : "https://placehold.co/400x400?text=No+Image",
                   originalPrice: formatPrice(basePrice),
-                  price: formatPrice(newPrice),
-                  discount: discount,
-                  savedAmount: formatPrice(savedAmount),
+                  price: formatPrice(basePrice),
+                  discount: "",
+                  savedAmount: "",
                   rating: product.rating || 4.5,
                   ratingCount: Math.floor(Math.random() * 1000) + 100,
                   hasStock: hasStock,
-                  // Không có specs cho phụ kiện
+                  specs: product.specs || [],
                 };
 
                 return (
                   <div
                     key={product.proId}
                     className="flex-shrink-0"
-                    style={{
-                      width: `calc(${100 / itemsPerView}% - ${((itemsPerView - 1) * (isMobile ? 8 : 12)) / itemsPerView}px)`,
-                    }}
+                    style={{ width: `calc(${100 / itemsPerView}% - ${((itemsPerView - 1) * (isMobile ? 8 : 12)) / itemsPerView}px)` }}
                   >
                     <ProductCard product={transformedProduct} />
                   </div>

@@ -513,9 +513,23 @@ export default function ProductPage({
                 Trang chủ
               </Link>
               <span>/</span>
-              <span>Điện thoại</span>
+              <Link
+                href={
+                  product.category?.categoryName
+                    ? `/product?category=${encodeURIComponent(
+                        product.category.categoryName,
+                      )}`
+                    : "/product"
+                }
+                className="text-blue-600 hover:underline"
+              >
+                {product.category?.categoryName || "Danh mục"}
+              </Link>
               <span>/</span>
-              <span>{product.category.categoryName}</span>
+              <span>
+                {product.category?.categoryName || "Danh mục"}
+                {product.brand?.brandName ? `  ${product.brand.brandName}` : ""}
+              </span>
               <span>/</span>
               <span className="text-gray-600">{product.proName}</span>
             </div>
