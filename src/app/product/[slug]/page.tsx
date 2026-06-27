@@ -64,8 +64,9 @@ export default function ProductPage({
   };
 
   const { getProductBySlug } = useProducts();
-  const { variants, fetchByProductId } = useProductVariants();
+  const { variants, fetchByProductId, loading: variantsLoading } = useProductVariants(10, true);
   const { addToCart } = useCart();
+  const [isVariantsLoaded, setIsVariantsLoaded] = useState(false);
 
   const { slug } = React.use(params);
 
@@ -73,11 +74,13 @@ export default function ProductPage({
     const loadProductData = async () => {
       try {
         setPageLoading(true);
+        setIsVariantsLoaded(false);
         const productResponse = await getProductBySlug(slug);
         setProduct(productResponse);
 
         if (productResponse?.proId) {
           await fetchByProductId(productResponse.proId);
+          setIsVariantsLoaded(true);
         }
       } catch (error) {
         console.error("Error loading product:", error);
@@ -90,6 +93,12 @@ export default function ProductPage({
       loadProductData();
     }
   }, [slug, getProductBySlug, fetchByProductId]);
+
+  useEffect(() => {
+    if (!variantsLoading && variants.length > 0) {
+      setIsVariantsLoaded(true);
+    }
+  }, [variantsLoading, variants]);
 
   useEffect(() => {
     if (toast) {
@@ -688,7 +697,7 @@ export default function ProductPage({
                   </div>
                 )}
 
-                {storageOptions.length > 0 &&
+                {isVariantsLoaded && storageOptions.length > 0 &&
                   storageOptions.some(
                     (opt) => opt.rom?.toLowerCase() !== "standard",
                   ) && (
@@ -761,7 +770,7 @@ export default function ProductPage({
                     </div>
                   )}
 
-                {colorOptions.length > 0 &&
+                {isVariantsLoaded && colorOptions.length > 0 &&
                   colorOptions.some(
                     (opt) => opt.color?.toLowerCase() !== "standard",
                   ) && (

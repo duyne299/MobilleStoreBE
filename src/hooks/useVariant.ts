@@ -10,7 +10,10 @@ interface FetchParams {
   search?: string;
 }
 
-export function useProductVariants(initialLimit = 10) {
+export function useProductVariants(
+  initialLimit = 10,
+  skipInitialFetch = false,
+) {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -188,8 +191,10 @@ export function useProductVariants(initialLimit = 10) {
   }, []);
 
   useEffect(() => {
-    fetchVariants({ page: 1, limit: initialLimit });
-  }, [fetchVariants, initialLimit]);
+    if (!skipInitialFetch) {
+      fetchVariants({ page: 1, limit: initialLimit });
+    }
+  }, [fetchVariants, initialLimit, skipInitialFetch]);
 
   return {
     variants,
