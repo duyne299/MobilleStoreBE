@@ -7,7 +7,9 @@ export interface Post {
   thumbnail?: string | null;
   content: string;
   excerpt?: string | null;
-  isActive: boolean;
+  isActive?: boolean;
+  active?: boolean;
+  status?: string;
   createdAt: string;
   author?: {
     authorName?: string | null;
@@ -21,6 +23,21 @@ export interface PostListResponse {
   total: number;
 }
 
+const normalizePost = (post: Post): Post => {
+  const statusValue = typeof post.status === "string" ? post.status.toLowerCase() : undefined;
+  const isActiveFromStatus =
+    statusValue === "active" || statusValue === "true" || statusValue === "1"
+      ? true
+      : statusValue === "inactive" || statusValue === "false" || statusValue === "0"
+      ? false
+      : undefined;
+
+  return {
+    ...post,
+    isActive: post.isActive ?? post.active ?? isActiveFromStatus ?? true,
+  };
+};
+
 export const postService = {
   async getAll(params?: {
     page?: number;
@@ -30,13 +47,16 @@ export const postService = {
     const res = await axiosClient.get<PostListResponse>("/api/posts", {
       params: params || {},
     });
-    return res.data;
+    return {
+      data: res.data.data.map(normalizePost),
+      total: res.data.total,
+    };
   },
 
   // Lấy chi tiết bài viết theo slug
   async getBySlug(slug: string): Promise<Post> {
     const res = await axiosClient.get<Post>(`/api/posts/${slug}`);
-    return res.data;
+    return normalizePost(res.data);
   },
 
   // Tạo bài viết mới (upload thumbnail)
@@ -62,7 +82,7 @@ export const postService = {
     const res = await axiosClient.post<Post>("/api/posts", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return res.data;
+    return normalizePost(res.data);
   },
 
   // Cập nhật bài viết theo slug
@@ -92,7 +112,7 @@ export const postService = {
       headers: { "Content-Type": "multipart/form-data" },
     });
 
-    return res.data;
+    return normalizePost(res.data);
   },
 
   // Xóa bài viết
@@ -105,6 +125,6 @@ export const postService = {
     const res = await axiosClient.patch<Post>(`/api/posts/${id}/status`, {
       isActive,
     });
-    return res.data;
+    return normalizePost(res.data);
   },
 };
