@@ -23,6 +23,12 @@ export interface PostListResponse {
   total: number;
 }
 
+const parseBoolean = (value: unknown): boolean | undefined => {
+  if (value === true || value === 1 || value === "true" || value === "1") return true;
+  if (value === false || value === 0 || value === "false" || value === "0") return false;
+  return undefined;
+};
+
 const normalizePost = (post: Post): Post => {
   const statusValue = typeof post.status === "string" ? post.status.toLowerCase() : undefined;
   const isActiveFromStatus =
@@ -34,7 +40,7 @@ const normalizePost = (post: Post): Post => {
 
   return {
     ...post,
-    isActive: post.isActive ?? post.active ?? isActiveFromStatus ?? true,
+    isActive: parseBoolean(post.isActive) ?? parseBoolean(post.active) ?? isActiveFromStatus ?? true,
   };
 };
 
@@ -79,9 +85,7 @@ export const postService = {
       formData.append("image", file);
     }
 
-    const res = await axiosClient.post<Post>("/api/posts", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await axiosClient.post<Post>("/api/posts", formData);
     return normalizePost(res.data);
   },
 
@@ -108,9 +112,7 @@ export const postService = {
       formData.append("image", file);
     }
 
-    const res = await axiosClient.put<Post>(`/api/posts/${slug}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await axiosClient.put<Post>(`/api/posts/${slug}`, formData);
 
     return normalizePost(res.data);
   },

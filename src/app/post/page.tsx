@@ -76,11 +76,15 @@ export default function BlogPostPage() {
     ];
   }, [posts, total]);
 
-  // Lọc bài viết theo thời gian
+  // Lọc bài viết theo thời gian và chỉ hiển thị bài active
+  const visiblePosts = useMemo(() => {
+    return posts.filter(post => post.isActive ?? true);
+  }, [posts]);
+
   const filteredPosts = useMemo(() => {
-    if (selectedFilter === 'Tất cả') return posts;
-    return posts.filter(post => getTimeFilter(post.createdAt) === selectedFilter);
-  }, [posts, selectedFilter]);
+    if (selectedFilter === 'Tất cả') return visiblePosts;
+    return visiblePosts.filter(post => getTimeFilter(post.createdAt) === selectedFilter);
+  }, [visiblePosts, selectedFilter]);
 
   // Xử lý load more
   const handleLoadMore = () => {

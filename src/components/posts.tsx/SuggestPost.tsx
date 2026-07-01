@@ -70,8 +70,10 @@ export default function SuggestedPosts() {
     );
   }
 
+  const visiblePosts = posts.filter(post => post.isActive ?? true);
+
   // Không có bài viết
-  if (!posts || posts.length === 0) {
+  if (!visiblePosts || visiblePosts.length === 0) {
     return (
       <div className="px-4 sm:px-12 md:px-16 lg:px-40 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 rounded-2xl bg-white">
@@ -146,7 +148,7 @@ export default function SuggestedPosts() {
                 damping: 30
               }}
             >
-              {posts.map((post) => (
+              {visiblePosts.map((post) => (
                 <div
                   key={post.postId}
                   className="flex-shrink-0"
